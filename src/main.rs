@@ -5,10 +5,9 @@ use std::io::Write;
 
 fn main() {
     while let Some(expr) = prompt(">") {
-        if expr.is_empty() {
-            continue;
+        for token in rustcalc::Lexer::new(&expr) {
+            println!("{}", token)
         }
-        println!("{}", expr)
     }
     println!(); // Newline after ^D
 }
