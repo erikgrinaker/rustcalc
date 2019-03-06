@@ -1,11 +1,14 @@
 #![warn(clippy::all)]
 
+mod lexer;
+
 use std::io;
 use std::io::Write;
+use lexer::Lexer;
 
 fn main() {
     while let Some(expr) = prompt(">") {
-        for token in rustcalc::Lexer::new(&expr) {
+        for token in Lexer::new(&expr) {
             println!("{}", token)
         }
     }
