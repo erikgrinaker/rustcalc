@@ -5,3 +5,4 @@ authors = ["Erik Grinaker <erik@grinaker.org>"]
 edition = "2018"
 
 [dependencies]
+rustyline = "3.0.0"

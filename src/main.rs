@@ -1,17 +1,19 @@
 #![warn(clippy::all)]
+extern crate rustyline;
 
 mod error;
 mod lexer;
 mod parser;
 
-use std::io;
-use std::io::Write;
+use rustyline::Editor;
+use rustyline::error::ReadlineError;
 
 use error::Error;
 use parser::Parser;
 
 fn main() -> Result<(), Error> {
-    while let Some(input) = prompt(">")? {
+    let mut rl = Editor::<()>::new();
+    while let Some(input) = prompt(&mut rl, "> ")? {
         match evaluate(&input) {
             Ok(Some(n)) => println!("{}", n),
             Err(e) => println!("Error: {}", e),
@@ -30,14 +32,14 @@ fn evaluate(input: &str) -> Result<Option<f64>, Error> {
     }
 }
 
-fn prompt(prompt: &str) -> Result<Option<String>, Error> {
-    print!("{} ", prompt);
-    io::stdout().flush()?;
-
-    let mut line = String::new();
-    if io::stdin().read_line(&mut line).unwrap() > 0 {
-        Ok(Some(line.trim().to_string()))
-    } else {
-        Ok(None)
+fn prompt(rl: &mut Editor<()>, prompt: &str) -> Result<Option<String>, Error> {
+    match rl.readline(prompt) {
+        Ok(input) => {
+            rl.add_history_entry(input.as_ref());
+            Ok(Some(input))
+        },
+        Err(ReadlineError::Eof) => Ok(None),
+        Err(ReadlineError::Interrupted) => Ok(None),
+        Err(err) => Err(Error::IOError(format!("{}", err))),
     }
 }
