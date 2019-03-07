@@ -105,7 +105,7 @@ fn is_number(c: char) -> bool {
 
 fn is_operator(c: char) -> bool {
     match c {
-        '+' | '-' | '*' | '/' => true,
+        '+' | '-' | '*' | '/' | '^' | '%' => true,
         _ => false,
     }
 }
