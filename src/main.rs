@@ -11,7 +11,7 @@ use error::Error;
 use parser::Parser;
 
 fn main() -> Result<(), Error> {
-    while let Some(input) = prompt(">") {
+    while let Some(input) = prompt(">")? {
         match evaluate(&input) {
             Ok(Some(n)) => println!("{}", n),
             Err(e) => println!("Error: {}", e),
@@ -30,14 +30,14 @@ fn evaluate(input: &str) -> Result<Option<f64>, Error> {
     }
 }
 
-fn prompt(prompt: &str) -> Option<String> {
+fn prompt(prompt: &str) -> Result<Option<String>, Error> {
     print!("{} ", prompt);
-    io::stdout().flush().unwrap();
+    io::stdout().flush()?;
 
     let mut line = String::new();
     if io::stdin().read_line(&mut line).unwrap() > 0 {
-        Some(line.trim().to_string())
+        Ok(Some(line.trim().to_string()))
     } else {
-        None
+        Ok(None)
     }
 }
