@@ -30,32 +30,31 @@ impl<'a> Lexer<'a> {
     }
 
     fn consume_whitespace(&mut self) {
-        self.scan_while(|&c| is_whitespace(c));
+        self.scan_while(is_whitespace);
     }
 
     fn scan_number(&mut self) -> Option<Token> {
-        self.scan_while(|&c| is_number(c)).map(Token::Number)
+        self.scan_while(is_number).map(Token::Number)
     }
 
     fn scan_operator(&mut self) -> Option<Token> {
-        self.iter.next().map(Token::Operator)
+        self.next_if(is_operator).map(Token::Operator)
     }
 
-    fn scan_while<F>(&mut self, f: F) -> Option<String> where F: Fn(&char) -> bool {
+    fn scan_while<F>(&mut self, predicate: F) -> Option<String> where F: Fn(char) -> bool {
         let mut value = String::new();
-        while let Some(c) = self.iter.peek() {
-            if f(c) {
-                value.push(*c);
-                self.iter.next();
-            } else {
-                break;
-            }
+        while let Some(c) = self.next_if(&predicate) {
+            value.push(c)
         }
         if !value.is_empty() {
             Some(value)
         } else {
             None
         }
+    }
+    
+    fn next_if<F>(&mut self, predicate: F) -> Option<char> where F: Fn(char) -> bool {
+        self.iter.peek().cloned().filter(|&c| predicate(c)).and_then(|_| self.iter.next())
     }
 }
 
@@ -79,12 +78,7 @@ fn is_number(c: char) -> bool {
 
 fn is_operator(c: char) -> bool {
     match c {
-        '+' => true,
-        '-' => true,
-        '*' => true,
-        '/' => true,
-        '^' => true,
-        '%' => true,
+        '+' | '-' | '*' | '/' => true,
         _ => false,
     }
 }
