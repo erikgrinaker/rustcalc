@@ -1,18 +1,28 @@
 #![warn(clippy::all)]
 
+mod error;
 mod lexer;
 
 use std::io;
 use std::io::Write;
+
+use error::Error;
 use lexer::Lexer;
 
-fn main() {
-    while let Some(expr) = prompt(">") {
-        for token in Lexer::new(&expr) {
-            println!("{}", token)
+fn main() -> Result<(), Error> {
+    'main: while let Some(expr) = prompt(">") {
+        for result in Lexer::new(&expr) {
+            match result {
+                Ok(token) => println!("{}", token),
+                Err(e) => {
+                    println!("Error: {}", e);
+                    continue 'main;
+                },
+            }
         }
     }
     println!(); // Newline after ^D
+    Ok(())
 }
 
 fn prompt(prompt: &str) -> Option<String> {

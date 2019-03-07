@@ -4,6 +4,8 @@ use std::fmt;
 use std::iter::Peekable;
 use std::str::Chars;
 
+use super::error::Error;
+
 pub enum Token {
     Number(String),
     Operator(char),
@@ -33,6 +35,15 @@ impl<'a> Lexer<'a> {
         self.scan_while(is_whitespace);
     }
 
+    fn scan(&mut self) -> Option<Token> {
+        self.consume_whitespace();
+        match self.iter.peek() {
+            Some(&c) if is_number(c) => self.scan_number(),
+            Some(&c) if is_operator(c) => self.scan_operator(),
+            _ => None,
+        }
+    }
+
     fn scan_number(&mut self) -> Option<Token> {
         self.scan_while(is_number).map(Token::Number)
     }
@@ -46,29 +57,21 @@ impl<'a> Lexer<'a> {
         while let Some(c) = self.next_if(&predicate) {
             value.push(c)
         }
-        if !value.is_empty() {
-            Some(value)
-        } else {
-            None
-        }
+        Some(value).filter(|v| !v.is_empty())
     }
-    
+
     fn next_if<F>(&mut self, predicate: F) -> Option<char> where F: Fn(char) -> bool {
         self.iter.peek().cloned().filter(|&c| predicate(c)).and_then(|_| self.iter.next())
     }
 }
 
 impl<'a> Iterator for Lexer<'a> {
-    type Item = Token;
+    type Item = Result<Token, Error>;
 
-    fn next(&mut self) -> Option<Token> {
-        self.consume_whitespace();
-        match self.iter.peek() {
-            Some(&c) if is_number(c) => self.scan_number(),
-            Some(&c) if is_operator(c) => self.scan_operator(),
-            None => None,
-            _ => panic!("Parse error"),
-        }
+    fn next(&mut self) -> Option<Result<Token, Error>> {
+        self.scan().map(Ok).or_else(||
+            self.iter.peek().map(|&c| Err(Error::ParseError(c)))
+        )
     }
 }
 
