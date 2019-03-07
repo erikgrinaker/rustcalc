@@ -51,10 +51,10 @@ impl<'a> Lexer<'a> {
 
     fn scan(&mut self) -> Option<Token> {
         self.consume_whitespace();
-        match self.iter.peek() {
-            Some(&c) if is_number(c) => self.scan_number(),
-            Some(&c) if is_operator(c) => self.scan_operator(),
-            Some(&c) if is_parens(c) => self.scan_parens(),
+        match *self.iter.peek()? {
+            c if is_number(c) => self.scan_number(),
+            c if is_operator(c) => self.scan_operator(),
+            c if is_parens(c) => self.scan_parens(),
             _ => None,
         }
     }
