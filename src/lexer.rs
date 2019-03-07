@@ -45,7 +45,14 @@ impl<'a> Lexer<'a> {
     }
 
     fn scan_number(&mut self) -> Option<Token> {
-        self.scan_while(is_number).map(Token::Number)
+        let mut num = self.scan_while(is_number)?;
+        if let Some(sep) = self.next_if(is_decimal_separator) {
+            num.push(sep);
+            if let Some(dec) = self.scan_while(is_number) {
+                num.push_str(&dec)
+            }
+        }
+        Some(Token::Number(num))
     }
 
     fn scan_operator(&mut self) -> Option<Token> {
@@ -73,6 +80,10 @@ impl<'a> Iterator for Lexer<'a> {
             self.iter.peek().map(|&c| Err(Error::ParseError(c)))
         )
     }
+}
+
+fn is_decimal_separator(c: char) -> bool {
+    c == '.'
 }
 
 fn is_number(c: char) -> bool {
