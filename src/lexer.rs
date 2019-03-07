@@ -28,6 +28,16 @@ pub struct Lexer<'a> {
     iter: Peekable<Chars<'a>>,
 }
 
+impl<'a> Iterator for Lexer<'a> {
+    type Item = Result<Token, Error>;
+
+    fn next(&mut self) -> Option<Result<Token, Error>> {
+        self.scan().map(Ok).or_else(||
+            self.iter.peek().map(|&c| Err(Error::ScanError(c)))
+        )
+    }
+}
+
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Lexer<'a> {
         Lexer{
@@ -82,16 +92,6 @@ impl<'a> Lexer<'a> {
 
     fn next_if<F>(&mut self, predicate: F) -> Option<char> where F: Fn(char) -> bool {
         self.iter.peek().cloned().filter(|&c| predicate(c)).and_then(|_| self.iter.next())
-    }
-}
-
-impl<'a> Iterator for Lexer<'a> {
-    type Item = Result<Token, Error>;
-
-    fn next(&mut self) -> Option<Result<Token, Error>> {
-        self.scan().map(Ok).or_else(||
-            self.iter.peek().map(|&c| Err(Error::ScanError(c)))
-        )
     }
 }
 
