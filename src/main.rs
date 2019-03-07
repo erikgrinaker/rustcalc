@@ -2,27 +2,32 @@
 
 mod error;
 mod lexer;
+mod parser;
 
 use std::io;
 use std::io::Write;
 
 use error::Error;
-use lexer::Lexer;
+use parser::Parser;
 
 fn main() -> Result<(), Error> {
-    'main: while let Some(expr) = prompt(">") {
-        for result in Lexer::new(&expr) {
-            match result {
-                Ok(token) => println!("{}", token),
-                Err(e) => {
-                    println!("Error: {}", e);
-                    continue 'main;
-                },
-            }
+    while let Some(input) = prompt(">") {
+        match evaluate(&input) {
+            Ok(Some(n)) => println!("{}", n),
+            Err(e) => println!("Error: {}", e),
+            Ok(None) => continue,
         }
     }
     println!(); // Newline after ^D
     Ok(())
+}
+
+fn evaluate(input: &str) -> Result<Option<f64>, Error> {
+    if !input.is_empty() {
+        Parser::new().parse(input).map(|expr| Some(expr.evaluate()))
+    } else {
+        Ok(None)
+    }
 }
 
 fn prompt(prompt: &str) -> Option<String> {
