@@ -9,12 +9,16 @@ use super::error::Error;
 pub enum Token {
     Number(String),
     Operator(char),
+    OpenParens,
+    CloseParens,
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Token::CloseParens => write!(f, ")"),
             Token::Number(n) => write!(f, "{}", n),
+            Token::OpenParens => write!(f, "("),
             Token::Operator(n) => write!(f, "{}", n),
         }
     }
@@ -40,6 +44,7 @@ impl<'a> Lexer<'a> {
         match self.iter.peek() {
             Some(&c) if is_number(c) => self.scan_number(),
             Some(&c) if is_operator(c) => self.scan_operator(),
+            Some(&c) if is_parens(c) => self.scan_parens(),
             _ => None,
         }
     }
@@ -57,6 +62,14 @@ impl<'a> Lexer<'a> {
 
     fn scan_operator(&mut self) -> Option<Token> {
         self.next_if(is_operator).map(Token::Operator)
+    }
+
+    fn scan_parens(&mut self) -> Option<Token> {
+        match self.next_if(is_parens)? {
+            '(' => Some(Token::OpenParens),
+            ')' => Some(Token::CloseParens),
+            _ => None,
+        }
     }
 
     fn scan_while<F>(&mut self, predicate: F) -> Option<String> where F: Fn(char) -> bool {
@@ -93,6 +106,13 @@ fn is_number(c: char) -> bool {
 fn is_operator(c: char) -> bool {
     match c {
         '+' | '-' | '*' | '/' => true,
+        _ => false,
+    }
+}
+
+fn is_parens(c: char) -> bool {
+    match c {
+        '(' | ')' => true,
         _ => false,
     }
 }
