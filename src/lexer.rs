@@ -1,27 +1,22 @@
 #![warn(clippy::all)]
 
-use std::fmt;
 use std::iter::Peekable;
 use std::str::Chars;
 
 use super::error::Error;
 
+#[derive(Debug, PartialEq)]
 pub enum Token {
     Number(String),
-    Operator(char),
-    OpenParens,
-    CloseParens,
-}
-
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Token::CloseParens => write!(f, ")"),
-            Token::Number(n) => write!(f, "{}", n),
-            Token::OpenParens => write!(f, "("),
-            Token::Operator(n) => write!(f, "{}", n),
-        }
-    }
+    Plus,
+    Minus,
+    Asterisk,
+    Slash,
+    Caret,
+    Percent,
+    Exclamation,
+    OpenParen,
+    CloseParen,
 }
 
 pub struct Lexer<'a> {
@@ -51,12 +46,10 @@ impl<'a> Lexer<'a> {
 
     fn scan(&mut self) -> Option<Token> {
         self.consume_whitespace();
-        match *self.iter.peek()? {
-            c if is_number(c) => self.scan_number(),
-            c if is_operator(c) => self.scan_operator(),
-            c if is_parens(c) => self.scan_parens(),
-            _ => None,
-        }
+        None
+            .or_else(|| self.scan_number())
+            .or_else(|| self.scan_operator())
+            .or_else(|| self.scan_parens())
     }
 
     fn scan_number(&mut self) -> Option<Token> {
@@ -71,13 +64,22 @@ impl<'a> Lexer<'a> {
     }
 
     fn scan_operator(&mut self) -> Option<Token> {
-        self.next_if(is_operator).map(Token::Operator)
+        match self.next_if(is_operator)? {
+            '+' => Some(Token::Plus),
+            '-' => Some(Token::Minus),
+            '*' => Some(Token::Asterisk),
+            '/' => Some(Token::Slash),
+            '^' => Some(Token::Caret),
+            '%' => Some(Token::Percent),
+            '!' => Some(Token::Exclamation),
+            _ => None,
+        }
     }
 
     fn scan_parens(&mut self) -> Option<Token> {
         match self.next_if(is_parens)? {
-            '(' => Some(Token::OpenParens),
-            ')' => Some(Token::CloseParens),
+            '(' => Some(Token::OpenParen),
+            ')' => Some(Token::CloseParen),
             _ => None,
         }
     }
@@ -105,7 +107,7 @@ fn is_number(c: char) -> bool {
 
 fn is_operator(c: char) -> bool {
     match c {
-        '+' | '-' | '*' | '/' | '^' | '%' => true,
+        '+' | '-' | '*' | '/' | '^' | '%' | '!' => true,
         _ => false,
     }
 }
@@ -119,4 +121,53 @@ fn is_parens(c: char) -> bool {
 
 fn is_whitespace(c: char) -> bool {
     c.is_whitespace()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn lexer_test(input: &str, tokens: Vec<Token>) {
+        let mut lexer = Lexer::new(input);
+        for token in tokens {
+            assert_eq!(lexer.next().unwrap().unwrap(), token);
+        };
+        assert_eq!(lexer.next().is_none(), true);
+    }
+
+    #[test]
+    fn addition() {
+        lexer_test("1 + 3.14", vec![
+            Token::Number("1".into()),
+            Token::Plus,
+            Token::Number("3.14".into()),
+        ])
+    }
+
+    #[test]
+    fn decimal() {
+        lexer_test("3.14", vec![
+            Token::Number("3.14".into()),
+        ]);
+    }
+
+    #[test]
+    fn integer() {
+        lexer_test("123", vec![
+            Token::Number("123".into()),
+        ]);
+    }
+
+    #[test]
+    fn operators() {
+        lexer_test("+-*/^%!", vec![
+            Token::Plus,
+            Token::Minus,
+            Token::Asterisk,
+            Token::Slash,
+            Token::Caret,
+            Token::Percent,
+            Token::Exclamation,
+        ]);
+    }
 }
