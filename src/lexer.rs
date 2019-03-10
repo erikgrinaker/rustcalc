@@ -41,7 +41,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn consume_whitespace(&mut self) {
-        self.scan_while(|c| c.is_whitespace());
+        self.next_while(|c| c.is_whitespace());
     }
 
     fn scan(&mut self) -> Option<Token> {
@@ -53,10 +53,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn scan_number(&mut self) -> Option<Token> {
-        let mut num = self.scan_while(|c| c.is_digit(10))?;
+        let mut num = self.next_while(|c| c.is_digit(10))?;
         if let Some(sep) = self.next_if(|c| c == '.') {
             num.push(sep);
-            if let Some(dec) = self.scan_while(|c| c.is_digit(10)) {
+            if let Some(dec) = self.next_while(|c| c.is_digit(10)) {
                 num.push_str(&dec)
             }
         }
@@ -84,22 +84,22 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    fn scan_while<F>(&mut self, predicate: F) -> Option<String> where F: Fn(char) -> bool {
-        let mut value = String::new();
-        while let Some(c) = self.next_if(&predicate) {
-            value.push(c)
-        }
-        Some(value).filter(|v| !v.is_empty())
-    }
-
     fn next_if<F>(&mut self, predicate: F) -> Option<char> where F: Fn(char) -> bool {
         self.iter.peek().cloned().filter(|&c| predicate(c)).and_then(|_| self.iter.next())
     }
 
     fn next_if_token<F>(&mut self, predicate: F) -> Option<Token> where F: Fn(char) -> Option<Token> {
-        let token = predicate(*self.iter.peek()?)?;
+        let token = self.iter.peek().and_then(|&c| predicate(c))?;
         self.iter.next();
         Some(token)
+    }
+
+    fn next_while<F>(&mut self, predicate: F) -> Option<String> where F: Fn(char) -> bool {
+        let mut value = String::new();
+        while let Some(c) = self.next_if(&predicate) {
+            value.push(c)
+        }
+        Some(value).filter(|v| !v.is_empty())
     }
 }
 
