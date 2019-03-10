@@ -41,7 +41,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn consume_whitespace(&mut self) {
-        self.scan_while(is_whitespace);
+        self.scan_while(|c| c.is_whitespace());
     }
 
     fn scan(&mut self) -> Option<Token> {
@@ -53,10 +53,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn scan_number(&mut self) -> Option<Token> {
-        let mut num = self.scan_while(is_number)?;
-        if let Some(sep) = self.next_if(is_decimal_separator) {
+        let mut num = self.scan_while(|c| c.is_digit(10))?;
+        if let Some(sep) = self.next_if(|c| c == '.') {
             num.push(sep);
-            if let Some(dec) = self.scan_while(is_number) {
+            if let Some(dec) = self.scan_while(|c| c.is_digit(10)) {
                 num.push_str(&dec)
             }
         }
@@ -64,7 +64,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn scan_operator(&mut self) -> Option<Token> {
-        match self.next_if(is_operator)? {
+        self.next_if_token(|c| match c {
             '+' => Some(Token::Plus),
             '-' => Some(Token::Minus),
             '*' => Some(Token::Asterisk),
@@ -73,15 +73,15 @@ impl<'a> Lexer<'a> {
             '%' => Some(Token::Percent),
             '!' => Some(Token::Exclamation),
             _ => None,
-        }
+        })
     }
 
     fn scan_parens(&mut self) -> Option<Token> {
-        match self.next_if(is_parens)? {
+        self.next_if_token(|c| match c {
             '(' => Some(Token::OpenParen),
             ')' => Some(Token::CloseParen),
             _ => None,
-        }
+        })
     }
 
     fn scan_while<F>(&mut self, predicate: F) -> Option<String> where F: Fn(char) -> bool {
@@ -95,32 +95,12 @@ impl<'a> Lexer<'a> {
     fn next_if<F>(&mut self, predicate: F) -> Option<char> where F: Fn(char) -> bool {
         self.iter.peek().cloned().filter(|&c| predicate(c)).and_then(|_| self.iter.next())
     }
-}
 
-fn is_decimal_separator(c: char) -> bool {
-    c == '.'
-}
-
-fn is_number(c: char) -> bool {
-    c.is_digit(10)
-}
-
-fn is_operator(c: char) -> bool {
-    match c {
-        '+' | '-' | '*' | '/' | '^' | '%' | '!' => true,
-        _ => false,
+    fn next_if_token<F>(&mut self, predicate: F) -> Option<Token> where F: Fn(char) -> Option<Token> {
+        let token = predicate(*self.iter.peek()?)?;
+        self.iter.next();
+        Some(token)
     }
-}
-
-fn is_parens(c: char) -> bool {
-    match c {
-        '(' | ')' => true,
-        _ => false,
-    }
-}
-
-fn is_whitespace(c: char) -> bool {
-    c.is_whitespace()
 }
 
 #[cfg(test)]
