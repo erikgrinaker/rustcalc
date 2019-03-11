@@ -116,6 +116,23 @@ mod tests {
     }
 
     #[test]
+    fn all() {
+        lexer_test("(12)3.14+-*/^%!", vec![
+            Token::OpenParen,
+            Token::Number("12".into()),
+            Token::CloseParen,
+            Token::Number("3.14".into()),
+            Token::Plus,
+            Token::Minus,
+            Token::Asterisk,
+            Token::Slash,
+            Token::Caret,
+            Token::Percent,
+            Token::Exclamation,
+        ])
+    }
+
+    #[test]
     fn addition() {
         lexer_test("1 + 3.14", vec![
             Token::Number("1".into()),
@@ -135,19 +152,6 @@ mod tests {
     fn integer() {
         lexer_test("123", vec![
             Token::Number("123".into()),
-        ]);
-    }
-
-    #[test]
-    fn operators() {
-        lexer_test("+-*/^%!", vec![
-            Token::Plus,
-            Token::Minus,
-            Token::Asterisk,
-            Token::Slash,
-            Token::Caret,
-            Token::Percent,
-            Token::Exclamation,
         ]);
     }
 }
