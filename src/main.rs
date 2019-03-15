@@ -2,6 +2,7 @@
 extern crate rustyline;
 
 mod error;
+mod expression;
 mod lexer;
 mod parser;
 
