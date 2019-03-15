@@ -1,5 +1,6 @@
 #![warn(clippy::all)]
 
+use std::fmt;
 use std::iter::Peekable;
 use std::str::Chars;
 
@@ -17,6 +18,23 @@ pub enum Token {
     Exclamation,
     OpenParen,
     CloseParen,
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match self {
+            Token::Number(n) => n,
+            Token::Plus => "+",
+            Token::Minus => "-",
+            Token::Asterisk => "*",
+            Token::Slash => "/",
+            Token::Caret => "^",
+            Token::Percent => "%",
+            Token::Exclamation => "!",
+            Token::OpenParen => "(",
+            Token::CloseParen => ")",
+        })
+    }
 }
 
 pub struct Lexer<'a> {

@@ -28,7 +28,7 @@ impl CLI {
 
     fn evaluate(&mut self, input: &str) -> Result<Option<f64>, Error> {
         if !input.is_empty() {
-            Parser::new().parse(input).map(|expr| Some(expr.evaluate()))
+            Parser::new(input).parse().map(|expr| Some(expr.evaluate()))
         } else {
             Ok(None)
         }
