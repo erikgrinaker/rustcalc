@@ -3,7 +3,7 @@ extern crate rustcalc;
 use rustcalc::parser::Parser;
 use std::f64;
 
-macro_rules! test_eval {
+macro_rules! test_evaluate {
     ( $( $name:ident: $value:expr, )* ) => {
     $(
         #[test]
@@ -15,7 +15,18 @@ macro_rules! test_eval {
     }
 }
 
-test_eval! {
+macro_rules! test_error {
+    ( $( $name:ident: $input:expr ),* ) => {
+    $(
+        #[test]
+        fn $name() {
+            assert!(Parser::new($input).parse().is_err(), "Expected error")
+        }
+    )*
+    }
+}
+
+test_evaluate! {
     // Literals
     number:             ("1",           1.0),
     number_decimal:     ("3.14",        3.14),
@@ -57,4 +68,14 @@ test_eval! {
 
     subtract:           ("1 - 2",       -1.0),
     subtract_negative:  ("1 - -2",      3.0),
+}
+
+test_error! {
+    empty:              "",
+    infix_repeated:     "1 * / 2",
+    infix_without_1:    "* 2",
+    infix_without_2:    "2 * ",
+    number_repeated:    "1 2",
+    number_multidot:    "1.2.3",
+    operator_bare:      "+"
 }
