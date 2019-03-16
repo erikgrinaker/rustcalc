@@ -46,7 +46,7 @@ impl<'a> Iterator for Lexer<'a> {
 
     fn next(&mut self) -> Option<Result<Token, Error>> {
         self.scan().map(Ok).or_else(||
-            self.iter.peek().map(|&c| Err(Error::Parse(format!("unexpected character {}", c))))
+            self.iter.peek().map(|&c| Err(Error::Parse(format!("Unexpected character {}", c))))
         )
     }
 }

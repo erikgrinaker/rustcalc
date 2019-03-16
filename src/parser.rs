@@ -68,7 +68,7 @@ impl<'a> Parser<'a> {
 
     fn parse_atom(&mut self) -> Result<Expression, Error> {
         let token = self.lexer.next().ok_or_else(||
-            Error::Parse("Unexpected end of input".to_string()))??;
+            Error::Parse("Unexpected end of input".into()))??;
         match token {
             Token::Number(n) => self.parse_number(n.to_string()),
             Token::Minus => Ok(Expression::Negate(Box::new(self.parse_atom()?))),
@@ -76,7 +76,7 @@ impl<'a> Parser<'a> {
             Token::OpenParen => {
                 let expr = self.parse_expression(1)?; // 1 implies stop at )
                 if self.next_if(|t| *t == Token::CloseParen).is_none() {
-                    Err(Error::Parse("Closing ) not found".to_string()))
+                    Err(Error::Parse("Closing ) not found".into()))
                 } else {
                     Ok(expr)
                 }
