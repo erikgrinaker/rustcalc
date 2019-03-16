@@ -33,13 +33,13 @@ macro_rules! test_evaluate {
 }
 
 test_evaluate! {
-    empty:                  ("",            Err(Error::ParseError(String::new()))),
+    empty:                  ("",            Err(Error::Parse(String::new()))),
 
     // Literals
     number:                 ("1",           Ok(1.0)),
     number_decimal:         ("3.14",        Ok(3.14)),
-    number_decimal_multi:   ("3.14.15",     Err(Error::ScanError('_'))),
-    number_repeated:        ("1 2",         Err(Error::ParseError(String::new()))),
+    number_decimal_multi:   ("3.14.15",     Err(Error::Parse(String::new()))),
+    number_repeated:        ("1 2",         Err(Error::Parse(String::new()))),
 
     // Prefix operators
     assert:                 ("+1",          Ok(1.0)),
@@ -55,10 +55,10 @@ test_evaluate! {
     factorial_zero:         ("0!",          Ok(1.0)),
 
     // Infix operators
-    infix_multi:            ("1 * / 2",     Err(Error::ParseError(String::new()))),
-    infix_bare:             ("*",           Err(Error::ParseError(String::new()))),
-    infix_pre:              ("* 2",         Err(Error::ParseError(String::new()))),
-    infix_post:             ("2 * ",        Err(Error::ParseError(String::new()))),
+    infix_multi:            ("1 * / 2",     Err(Error::Parse(String::new()))),
+    infix_bare:             ("*",           Err(Error::Parse(String::new()))),
+    infix_pre:              ("* 2",         Err(Error::Parse(String::new()))),
+    infix_post:             ("2 * ",        Err(Error::Parse(String::new()))),
 
     add:                    ("1 + 2",       Ok(3.0)),
     add_negative:           ("1 + -2",      Ok(-1.0)),
@@ -86,8 +86,8 @@ test_evaluate! {
     subtract_negative:      ("1 - -2",      Ok(3.0)),
 
     // Parenthesis
-    paren_noclose:          ("(1 + 2",      Err(Error::ParseError(String::new()))),
-    paren_noopen:           ("1 + 2 )",     Err(Error::ParseError(String::new()))),
+    paren_noclose:          ("(1 + 2",      Err(Error::Parse(String::new()))),
+    paren_noopen:           ("1 + 2 )",     Err(Error::Parse(String::new()))),
 
     // Operator precedence and associativity
     assoc_add_sub:          ("7 - 4 + 2",   Ok(5.0)),

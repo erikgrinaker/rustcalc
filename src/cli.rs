@@ -40,14 +40,16 @@ impl CLI {
             }
             Err(ReadlineError::Eof) => Ok(None),
             Err(ReadlineError::Interrupted) => Ok(None),
-            Err(err) => Err(Error::IOError(format!("{}", err))),
+            Err(err) => Err(Error::IO(format!("{}", err))),
         }
     }
 
     pub fn run(&mut self) -> Result<(), Error> {
         while let Some(input) = self.prompt()? {
             match self.evaluate(&input) {
-                Ok(Some(n)) => println!("{}", n),
+                Ok(Some(n)) => {
+                    println!("{}", n)
+                },
                 Err(e) => println!("Error: {}", e),
                 Ok(None) => continue,
             }
