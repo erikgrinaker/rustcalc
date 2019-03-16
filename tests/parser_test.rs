@@ -12,17 +12,17 @@ macro_rules! test_evaluate {
         #[test]
         fn $name() {
             let expect: Result<f64, Error> = $expect;
-            let actual = Parser::new($input).parse();
+            let actual = Parser::new($input).parse().map(|expr| expr.evaluate());
             match expect {
                 Ok(expect_value) => {
                     match actual {
-                        Ok(expr) => assert_eq!(expect_value, expr.evaluate()),
+                        Ok(value) => assert_eq!(expect_value, value),
                         Err(e) => assert!(false, "Error: {}", e),
                     }
                 },
                 Err(expect_error) => {
                     match actual {
-                        Ok(expr) => assert!(false, "Expected error, got {}", expr.evaluate()),
+                        Ok(value) => assert!(false, "Expected error, got {}", value),
                         Err(e) => assert_eq!(mem::discriminant(&expect_error), mem::discriminant(&e)),
                     }
                 }
