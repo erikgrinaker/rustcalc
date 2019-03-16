@@ -1,5 +1,6 @@
 #![warn(clippy::all)]
 
+#[derive(Debug)]
 pub enum Expression {
     Add{lhs: Box<Expression>, rhs: Box<Expression>},
     Divide{lhs: Box<Expression>, rhs: Box<Expression>},

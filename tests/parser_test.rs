@@ -72,8 +72,11 @@ test_evaluate! {
     subtract:           ("1 - 2",       -1.0),
     subtract_negative:  ("1 - -2",      3.0),
 
-    // Operator precedence
+    // Operator precedence and associativity
+    assoc_add_sub:      ("7 - 4 + 2",   5.0),
+    prec_all:           ("2 ^ 3 * 4 + 4 / 3 % 2 - 3 % 4 ^ 2", 30.333333333333336_f64),
     prec_add_multiply:  ("2 * 3 + 1",   7.0),
+    prec_paren:         ("2 * (3 + 1)", 8.0),
 }
 
 test_error! {
@@ -83,5 +86,6 @@ test_error! {
     infix_without_2:    "2 * ",
     number_repeated:    "1 2",
     number_multidot:    "1.2.3",
-    operator_bare:      "+"
+    operator_bare:      "+",
+    paren_noclose:      "(1 + 2"
 }
