@@ -14,16 +14,21 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn evaluate(self) -> f64 {
+    pub fn evaluate(&self) -> f64 {
         match self {
             Expression::Add{lhs, rhs} => lhs.evaluate() + rhs.evaluate(),
             Expression::Divide{lhs, rhs} => lhs.evaluate() / rhs.evaluate(),
             Expression::Exponentiate{lhs, rhs} => lhs.evaluate().powf(rhs.evaluate()),
             Expression::Factorial(n) => factorial(n.evaluate()),
-            Expression::Modulo{lhs, rhs} => lhs.evaluate() % rhs.evaluate(),
+            Expression::Modulo{lhs, rhs} => {
+                // The % operator in Rust is remainder, not modulo
+                let l = lhs.evaluate();
+                let r = rhs.evaluate();
+                ((l % r) + r) % r
+            },
             Expression::Multiply{lhs, rhs} => lhs.evaluate() * rhs.evaluate(),
             Expression::Negate(n) => -n.evaluate(),
-            Expression::Number(n) => n,
+            Expression::Number(n) => *n,
             Expression::Subtract{lhs, rhs} => lhs.evaluate() - rhs.evaluate(),
         }
     }
