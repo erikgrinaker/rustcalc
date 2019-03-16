@@ -6,24 +6,30 @@ use super::error::Error;
 use super::expression::Expression;
 use super::lexer::{Lexer, Token};
 
+const ASSOCIATES_LEFT: i8 = 1;
+const ASSOCIATES_RIGHT: i8 = 0;
+
 impl Token {
     fn associativity(&self) -> i8 {
         match self {
-            Token::Caret => 1,
-            _ => 0,
+            Token::Caret => ASSOCIATES_RIGHT,
+            _ => ASSOCIATES_LEFT,
         }
     }
 
     fn precedence(&self) -> i8 {
-        (match self {
+        match self {
+            Token::Number(..) => 0,
+            Token::OpenParen => 0,
+            Token::CloseParen => 0,
             Token::Plus => 1,
             Token::Minus => 1,
             Token::Asterisk => 2,
             Token::Percent => 2,
             Token::Slash => 2,
             Token::Caret => 3,
-            _ => 0,
-        } + self.associativity())
+            Token::Exclamation => 4,
+        }
     }
 }
 
@@ -52,7 +58,12 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<Expression, Error> {
-        self.parse_expression(0)
+        let expr = self.parse_expression(1)?;
+        if let Some(result) = self.lexer.next() {
+            Err(Error::ParseError(format!("Unexpected token {}", result?)))
+        } else {
+            Ok(expr)
+        }
     }
 
     fn parse_atom(&mut self) -> Result<Expression, Error> {
@@ -63,7 +74,7 @@ impl<'a> Parser<'a> {
             Token::Minus => Ok(Expression::Negate(Box::new(self.parse_atom()?))),
             Token::Plus => Ok(self.parse_atom()?),
             Token::OpenParen => {
-                let expr = self.parse_expression(1)?;
+                let expr = self.parse_expression(1)?; // 1 implies stop at )
                 if self.next_if(|t| *t == Token::CloseParen).is_none() {
                     Err(Error::ParseError("Closing ) not found".to_string()))
                 } else {
@@ -80,32 +91,32 @@ impl<'a> Parser<'a> {
             lhs = match token {
                 Token::Asterisk => Expression::Multiply{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence())?),
+                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
                 },
                 Token::Caret => Expression::Exponentiate{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence())?),
+                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
                 },
                 Token::Exclamation => Expression::Factorial(Box::new(lhs)),
                 Token::Minus => Expression::Subtract{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence())?),
+                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
                 },
                 Token::Percent => Expression::Modulo{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence())?),
+                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
                 },
                 Token::Plus => Expression::Add{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence())?),
+                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
                 },
                 Token::Slash => Expression::Divide{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence())?),
+                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
                 },
-                _ => return Err(Error::ParseError(format!("Unexpected token {}", token))),
+                _ => break,
             };
-        }
+        };
         Ok(lhs)
     }
 
