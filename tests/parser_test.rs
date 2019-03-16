@@ -47,6 +47,8 @@ test_evaluate! {
     factorial:              ("5!",          Ok(120.0)),
     factorial_multi:        ("3!!",         Ok(720.0)),
     factorial_zero:         ("0!",          Ok(1.0)),
+    factorial_decimal:      ("3.14!",       Ok(f64::NAN)),
+    factorial_negative:     ("-1!",         Ok(f64::NAN)),
     factorial_precedence:   ("2 ^ 3!",      Ok(64.0)),
 
     // Infix operators
