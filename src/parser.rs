@@ -6,6 +6,25 @@ use super::error::Error;
 use super::expression::Expression;
 use super::lexer::{Lexer, Token};
 
+fn associativity(token: &Token) -> i8 {
+    match token {
+        Token::Caret => 1,
+        _ => 0,
+    }
+}
+
+fn precedence(token: &Token) -> i8 {
+    (match token {
+        Token::Plus => 1,
+        Token::Minus => 1,
+        Token::Asterisk => 2,
+        Token::Percent => 2,
+        Token::Slash => 2,
+        Token::Caret => 3,
+        _ => 0,
+    } + associativity(token))
+}
+
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
 }
@@ -19,7 +38,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<Expression, Error> {
-        self.parse_expression()
+        self.parse_expression(0)
     }
 
     fn parse_atom(&mut self) -> Result<Expression, Error> {
@@ -33,35 +52,39 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_expression(&mut self) -> Result<Expression, Error> {
+    fn parse_expression(&mut self, min_prec: i8) -> Result<Expression, Error> {
         let mut lhs = self.parse_atom()?;
-        while let Some(result) = self.lexer.next() {
-            let token = result?;
+        while let Some(result) = self.lexer.peek() {
+            let prec = result.as_ref().map(|token| precedence(&token))?;
+            if prec < min_prec {
+                break
+            };
+            let token = self.lexer.next().unwrap().unwrap(); // Safe since we peeked
             lhs = match token {
                 Token::Asterisk => Expression::Multiply{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression()?),
+                    rhs: Box::new(self.parse_expression(prec)?),
                 },
                 Token::Caret => Expression::Exponentiate{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression()?),
+                    rhs: Box::new(self.parse_expression(prec)?),
                 },
                 Token::Exclamation => Expression::Factorial(Box::new(lhs)),
                 Token::Minus => Expression::Subtract{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression()?),
+                    rhs: Box::new(self.parse_expression(prec)?),
                 },
                 Token::Percent => Expression::Modulo{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression()?),
+                    rhs: Box::new(self.parse_expression(prec)?),
                 },
                 Token::Plus => Expression::Add{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression()?),
+                    rhs: Box::new(self.parse_expression(prec)?),
                 },
                 Token::Slash => Expression::Divide{
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression()?),
+                    rhs: Box::new(self.parse_expression(prec)?),
                 },
                 _ => return Err(Error::ParseError(format!("Unexpected token {}", token))),
             };

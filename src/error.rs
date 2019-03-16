@@ -26,6 +26,16 @@ impl fmt::Debug for Error {
     }
 }
 
+impl From<&Error> for Error {
+    fn from(e: &Error) -> Self {
+        match e {
+            Error::ParseError(s) => Error::ParseError(s.to_string()),
+            Error::ScanError(c) => Error::ScanError(*c),
+            Error::IOError(s) => Error::IOError(s.to_string()),
+        }
+    }
+}
+
 impl From<num::ParseFloatError> for Error {
     fn from(e: num::ParseFloatError) -> Self {
         Error::ParseError(format!("invalid number: {}", e))

@@ -9,7 +9,10 @@ macro_rules! test_evaluate {
         #[test]
         fn $name() {
             let (input, expect) = $value;
-            assert_eq!(expect, Parser::new(input).parse().unwrap().evaluate())
+            match Parser::new(input).parse() {
+                Ok(expr) => assert_eq!(expect, expr.evaluate()),
+                Err(e) => assert!(false, "Error: {}", e),
+            }
         }
     )*
     }
@@ -53,7 +56,7 @@ test_evaluate! {
     divide_zero:        ("1 / 0",       f64::INFINITY),
 
     exp:                ("2 ^ 3",       8.0),
-    exp_fraction:       ("8 ^ 1/3",     2.0),
+    exp_fraction:       ("8 ^ (1/3)",   2.0),
     exp_negative:       ("2 ^ -3",      0.125),
     exp_zero:           ("2 ^ 0",       1.0),
     exp_zero_zero:      ("0 ^ 0",       1.0),
@@ -68,6 +71,9 @@ test_evaluate! {
 
     subtract:           ("1 - 2",       -1.0),
     subtract_negative:  ("1 - -2",      3.0),
+
+    // Operator precedence
+    prec_add_multiply:  ("2 * 3 + 1",   7.0),
 }
 
 test_error! {
