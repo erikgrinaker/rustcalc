@@ -71,10 +71,11 @@ impl<'a> Parser<'a> {
                 Err(Error::Parse(format!("{}() takes {}-{} args, received {}", name, min, max, args.len())))
             }
         };
-        let arg = |n: usize| {
-            Box::new(args[n].clone())
-        };
+        let arg = |n: usize| Box::new(args[n].clone());
         match name.to_lowercase().as_str() {
+            "cos" => { count_args(1, 1)?; Ok(Expression::Cosine(arg(0))) },
+            "degrees" => { count_args(1, 1)?; Ok(Expression::Degrees(arg(0))) },
+            "radians" => { count_args(1, 1)?; Ok(Expression::Radians(arg(0))) },
             "round" => {
                 let nargs = count_args(1, 2)?;
                 let decimals = if nargs == 1 { Box::new(Expression::Number(0.0)) } else { arg(1) };
@@ -83,10 +84,9 @@ impl<'a> Parser<'a> {
                     decimals: decimals,
                 })
             },
-            "sqrt" => {
-                count_args(1, 1)?;
-                Ok(Expression::SquareRoot(arg(0)))
-            },
+            "sin" => { count_args(1, 1)?; Ok(Expression::Sine(arg(0))) },
+            "sqrt" => { count_args(1, 1)?; Ok(Expression::SquareRoot(arg(0))) },
+            "tan" => { count_args(1, 1)?; Ok(Expression::Tangent(arg(0))) },
             _ => Err(Error::Parse(format!("Unknown function {}", name))),
         }
     }
