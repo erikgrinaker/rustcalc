@@ -8,7 +8,6 @@ use std::num;
 pub enum Error {
     IO(String),
     Parse(String),
-    Value(String),
 }
 
 impl fmt::Debug for Error {
@@ -22,7 +21,6 @@ impl fmt::Display for Error {
         match self {
             Error::IO(s) => write!(f, "{}", s),
             Error::Parse(s) => write!(f, "{}", s),
-            Error::Value(s) => write!(f, "{}", s),
         }
     }
 }
@@ -32,7 +30,6 @@ impl From<&Error> for Error {
         match e {
             Error::IO(s) => Error::IO(s.clone()),
             Error::Parse(s) => Error::Parse(s.clone()),
-            Error::Value(s) => Error::Value(s.clone()),
         }
     }
 }
@@ -44,7 +41,7 @@ impl From<io::Error> for Error {
 }
 
 impl From<num::ParseFloatError> for Error {
-    fn from(e: num::ParseFloatError) -> Self {
-        Error::Value(format!("invalid number: {}", e))
+    fn from(err: num::ParseFloatError) -> Self {
+        Error::Parse(err.to_string())
     }
 }

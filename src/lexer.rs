@@ -93,6 +93,15 @@ impl<'a> Lexer<'a> {
                 num.push_str(&dec)
             }
         }
+        if let Some(exp) = self.next_if(|c| c == 'e' || c == 'E') {
+            num.push(exp);
+            if let Some(sign) = self.next_if(|c| c == '-' || c == '+') {
+                num.push(sign)
+            }
+            if let Some(n) = self.next_while(|c| c.is_digit(10)) {
+                num.push_str(&n)
+            }
+        }
         Some(Token::Number(num))
     }
 

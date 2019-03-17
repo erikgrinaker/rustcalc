@@ -46,6 +46,16 @@ test_evaluate! {
     number_decimal_comma:   ("3,14",        Err(Error::Parse("Unexpected token ,".into()))),
     number_decimal_multi:   ("3.14.15",     Err(Error::Parse("Unexpected character .".into()))),
     number_repeated:        ("1 2",         Err(Error::Parse("Unexpected token 2".into()))),
+    number_sci:             ("3e2",         Ok(300.0)),
+    number_sci_zero:        ("3e0",         Ok(3.0)),
+    number_sci_capital:     ("3E2",         Ok(300.0)),
+    number_sci_dec_base:    ("3.14e1",      Ok(31.4)),
+    number_sci_dec_exp:     ("3e2.1",       Err(Error::Parse("Unexpected character .".into()))),
+    number_sci_neg_base:    ("-3.14e1",     Ok(-31.4)),
+    number_sci_neg_exp:     ("3.14e-2",     Ok(0.0314)),
+    number_sci_no_exp:      ("3e",          Err(Error::Parse("invalid float literal".into()))),
+    number_sci_exp_plus:    ("3.14e+2",     Ok(314.0)),
+    number_sci_exp_signs:   ("3.14e--2",    Err(Error::Parse("invalid float literal".into()))),
 
     // Prefix operators
     prefix_bare:            ("+",           Err(Error::Parse("Unexpected end of input".into()))),
