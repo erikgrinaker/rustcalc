@@ -62,10 +62,10 @@ test_evaluate! {
     prefix_bare_multi:      ("-+",          Err(Error::Parse("Unexpected end of input".into()))),
     prefix_multi:           ("-+-+-1",      Ok(-1.0)),
 
-    assert:                 ("+1",          Ok(1.0)),
-    assert_decimal:         ("+3.14",       Ok(3.14)),
-    assert_infinity:        ("+inf",        Ok(f64::INFINITY)),
-    assert_nan:             ("+nan",        Ok(f64::NAN)),
+    identity:               ("+1",          Ok(1.0)),
+    identity_decimal:       ("+3.14",       Ok(3.14)),
+    identity_infinity:      ("+inf",        Ok(f64::INFINITY)),
+    identity_nan:           ("+nan",        Ok(f64::NAN)),
 
     negate:                 ("-1",          Ok(-1.0)),
     negate_decimal:         ("-3.14",       Ok(-3.14)),
