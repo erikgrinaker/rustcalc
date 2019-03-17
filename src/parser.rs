@@ -99,7 +99,7 @@ impl<'a> Parser<'a> {
             Err(_) => return None,
         };
         if predicate(token) {
-            Some(self.lexer.next().unwrap().unwrap())
+            self.lexer.next()?.ok()
         } else {
             None
         }

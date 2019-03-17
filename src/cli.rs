@@ -42,15 +42,6 @@ impl CLI {
         }
     }
 
-    /// Parses and evaluates the input expressions, printing the result to stdout
-    fn evaluate_print(&mut self, input: &str) {
-        match self.evaluate(&input) {
-            Ok(Some(result)) => println!("{}", result),
-            Err(err) => println!("Error: {}", err),
-            Ok(None) => {}
-        }
-    }
-
     /// Prompts the user for an input expression and returns it
     fn prompt(&mut self) -> Result<Option<String>, Error> {
         match self.prompt.readline("> ") {
@@ -60,7 +51,7 @@ impl CLI {
             }
             Err(ReadlineError::Eof) => Ok(None),
             Err(ReadlineError::Interrupted) => Ok(None),
-            Err(err) => Err(Error::IO(format!("{}", err))),
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -78,12 +69,18 @@ impl CLI {
         self.debug = opts.is_present("debug");
 
         if let Some(input) = opts.value_of("expr") {
-            self.evaluate_print(&input);
+            if let Some(result) = self.evaluate(&input)? {
+                println!("{}", result)
+            };
             return Ok(());
         }
 
         while let Some(input) = self.prompt()? {
-            self.evaluate_print(&input)
+            match self.evaluate(&input) {
+                Ok(Some(result)) => println!("{}", result),
+                Err(err) => println!("Error: {}", err),
+                Ok(None) => {}
+            }
         }
         Ok(())
     }
