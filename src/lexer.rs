@@ -20,6 +20,7 @@ pub enum Token {
     Exclamation,
     OpenParen,
     CloseParen,
+    Comma,
 }
 
 impl fmt::Display for Token {
@@ -37,6 +38,7 @@ impl fmt::Display for Token {
             Token::Exclamation => "!",
             Token::OpenParen => "(",
             Token::CloseParen => ")",
+            Token::Comma => ",",
         })
     }
 }
@@ -72,7 +74,7 @@ impl<'a> Lexer<'a> {
             .or_else(|| self.scan_ident())
             .or_else(|| self.scan_number())
             .or_else(|| self.scan_operator())
-            .or_else(|| self.scan_parens())
+            .or_else(|| self.scan_punctuation())
     }
 
     fn scan_ident(&mut self) -> Option<Token> {
@@ -108,10 +110,11 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    fn scan_parens(&mut self) -> Option<Token> {
+    fn scan_punctuation(&mut self) -> Option<Token> {
         self.next_if_token(|c| match c {
             '(' => Some(Token::OpenParen),
             ')' => Some(Token::CloseParen),
+            ',' => Some(Token::Comma),
             _ => None,
         })
     }

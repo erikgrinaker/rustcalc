@@ -2,7 +2,7 @@
 
 use std::f64;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Constant {
     E,
     Infinity,
@@ -21,7 +21,7 @@ impl Constant {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Expression {
     Add{lhs: Box<Expression>, rhs: Box<Expression>},
     Constant(Constant),
@@ -32,6 +32,7 @@ pub enum Expression {
     Multiply{lhs: Box<Expression>, rhs: Box<Expression>},
     Negate(Box<Expression>),
     Number(f64),
+    Round{value: Box<Expression>, decimals: Box<Expression>},
     SquareRoot(Box<Expression>),
     Subtract{lhs: Box<Expression>, rhs: Box<Expression>},
 }
@@ -62,6 +63,15 @@ impl Expression {
             Expression::Multiply{lhs, rhs} => lhs.evaluate() * rhs.evaluate(),
             Expression::Negate(n) => -n.evaluate(),
             Expression::Number(n) => *n,
+            Expression::Round{value, decimals} => {
+                let n = value.evaluate();
+                let d = decimals.evaluate();
+                if d < 0.0 || d.fract() != 0.0 {
+                    return f64::NAN
+                };
+                let scale = 10_f64.powf(d);
+                (scale * n).round() / scale
+            },
             Expression::SquareRoot(n) => n.evaluate().sqrt(),
             Expression::Subtract{lhs, rhs} => lhs.evaluate() - rhs.evaluate(),
         }

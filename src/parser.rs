@@ -23,6 +23,7 @@ impl Token {
             Token::Number(..) => 0,
             Token::OpenParen => 0,
             Token::CloseParen => 0,
+            Token::Comma => 0,
             Token::Plus => 1,
             Token::Minus => 1,
             Token::SquareRoot => 1,
@@ -45,6 +46,53 @@ impl<'a> Parser<'a> {
         Parser{
             lexer: Lexer::new(input).peekable()
         }
+    }
+
+    fn build_constant(&mut self, name: String) -> Result<Expression, Error> {
+        Ok(Expression::Constant(
+            match name.to_lowercase().as_str() {
+                "e" => Constant::E,
+                "inf" => Constant::Infinity,
+                "nan" => Constant::NaN,
+                "pi" => Constant::Pi,
+                "π" => Constant::Pi,
+                _ => return Err(Error::Parse(format!("Unknown constant {}", name))),
+            }
+        ))
+    }
+
+    fn build_function(&mut self, name: String, args: Vec<Expression>) -> Result<Expression, Error> {
+        let count_args = |min, max| {
+            if args.len() >= min && args.len() <= max {
+                Ok(args.len())
+            } else if min == max {
+                Err(Error::Parse(format!("{}() takes {} args, received {}", name, min, args.len())))
+            } else {
+                Err(Error::Parse(format!("{}() takes {}-{} args, received {}", name, min, max, args.len())))
+            }
+        };
+        let arg = |n: usize| {
+            Box::new(args[n].clone())
+        };
+        match name.to_lowercase().as_str() {
+            "round" => {
+                let nargs = count_args(1, 2)?;
+                let decimals = if nargs == 1 { Box::new(Expression::Number(0.0)) } else { arg(1) };
+                Ok(Expression::Round{
+                    value: arg(0),
+                    decimals: decimals,
+                })
+            },
+            "sqrt" => {
+                count_args(1, 1)?;
+                Ok(Expression::SquareRoot(arg(0)))
+            },
+            _ => Err(Error::Parse(format!("Unknown function {}", name))),
+        }
+    }
+
+    fn build_number(&mut self, n: String) -> Result<Expression, Error> {
+        Ok(Expression::Number(n.parse::<f64>()?))
     }
 
     fn next_if<F>(&mut self, predicate: F) -> Option<Token> where F: Fn(&Token) -> bool {
@@ -72,8 +120,26 @@ impl<'a> Parser<'a> {
         let token = self.lexer.next().ok_or_else(||
             Error::Parse("Unexpected end of input".into()))??;
         match token {
-            Token::Ident(n) => self.parse_constant(n.clone()),
-            Token::Number(n) => self.parse_number(n.clone()),
+            Token::Ident(n) => {
+                if self.next_if(|t| *t == Token::OpenParen).is_some() {
+                    let mut args = Vec::new();
+                    while self.next_if(|t| *t == Token::CloseParen).is_none() {
+                        if !args.is_empty() {
+                            match self.lexer.next() {
+                                Some(Ok(Token::Comma)) if !args.is_empty() => (),
+                                Some(Ok(t)) => return Err(Error::Parse(format!("Unexpected token {}", t))),
+                                Some(Err(err)) => return Err(err),
+                                None => return Err(Error::Parse("Unexpected end of input".into())),
+                            }
+                        }
+                        args.push(self.parse_expression(1)?);
+                    };
+                    self.build_function(n.clone(), args)
+                } else {
+                    self.build_constant(n.clone())
+                }
+            },
+            Token::Number(n) => self.build_number(n.clone()),
             Token::Minus => Ok(Expression::Negate(Box::new(self.parse_atom()?))),
             Token::Plus => Ok(self.parse_atom()?),
             Token::SquareRoot => Ok(Expression::SquareRoot(Box::new(self.parse_atom()?))),
@@ -122,22 +188,5 @@ impl<'a> Parser<'a> {
             };
         };
         Ok(lhs)
-    }
-
-    fn parse_constant(&mut self, name: String) -> Result<Expression, Error> {
-        Ok(Expression::Constant(
-            match name.to_lowercase().as_str() {
-                "e" => Constant::E,
-                "inf" => Constant::Infinity,
-                "nan" => Constant::NaN,
-                "pi" => Constant::Pi,
-                "π" => Constant::Pi,
-                _ => return Err(Error::Parse(format!("Unknown constant {}", name))),
-            }
-        ))
-    }
-
-    fn parse_number(&mut self, n: String) -> Result<Expression, Error> {
-        Ok(Expression::Number(n.parse::<f64>()?))
     }
 }
