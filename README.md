@@ -93,6 +93,8 @@ Functions are expressed as `name(a, b)`, where arguments must be numerical value
 * `round(n, [d])`: rounds `n` to the number of decimals given by `d` (default 0), e.g. `round(3.14)` yields `3` and `round(3.14, 1)` yields `3.1`.
 * `sqrt(n)`: returns the square root of the given number, e.g. `sqrt(4)` yields `2`.
 
+#### Trigonometric functions
+
 * `radians(d)`: converts the angle `d` in degrees to radians e.g. `radians(180)` yields ~`3.14`.
 * `degrees(r)`: converts the angle `r` in radians to degrees, e.g. `degrees(pi)` yields `180`.
 * `sin(r)`: returns the sine of the given angle in radians, e.g. `sin(pi/2)` yields `1`.
