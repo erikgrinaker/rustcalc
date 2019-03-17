@@ -102,6 +102,18 @@ pub enum Expression {
     Tangent(Box<Expression>),
 }
 
+impl From<Constant> for Expression {
+    fn from(c: Constant) -> Self {
+        Expression::Constant(c)
+    }
+}
+
+impl From<f64> for Expression {
+    fn from(n: f64) -> Self {
+        Expression::Number(n)
+    }
+}
+
 impl From<&Expression> for f64 {
     fn from(expr: &Expression) -> Self {
         expr.evaluate()

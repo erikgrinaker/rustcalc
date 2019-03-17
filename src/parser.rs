@@ -8,6 +8,7 @@ const ASSOCIATES_LEFT: i8 = 1;
 const ASSOCIATES_RIGHT: i8 = 0;
 
 impl Token {
+    // Returns the token's associativity
     fn associativity(&self) -> i8 {
         match self {
             Token::Caret => ASSOCIATES_RIGHT,
@@ -15,6 +16,7 @@ impl Token {
         }
     }
 
+    // Returns the token's precedence
     fn precedence(&self) -> i8 {
         match self {
             Token::Ident(..) => 0,
@@ -34,27 +36,29 @@ impl Token {
     }
 }
 
+/// Parses an input string into an expression, by precedence climbing
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
 }
 
-// This uses the precedence climbing parser algorithm
 impl<'a> Parser<'a> {
+    /// Creates a new parser for the given input string
     pub fn new(input: &str) -> Parser {
         Parser {
             lexer: Lexer::new(input).peekable(),
         }
     }
 
+    /// Builds a constant expression node from a constant name
     fn build_constant(&mut self, name: String) -> Result<Expression, Error> {
-        Ok(Expression::Constant(match name.to_lowercase().as_str() {
-            "e" => Constant::E,
-            "inf" => Constant::Infinity,
-            "nan" => Constant::NaN,
-            "pi" => Constant::Pi,
-            "π" => Constant::Pi,
-            _ => return Err(Error::Parse(format!("Unknown constant {}", name))),
-        }))
+        match name.to_lowercase().as_str() {
+            "e" => Ok(Constant::E.into()),
+            "inf" => Ok(Constant::Infinity.into()),
+            "nan" => Ok(Constant::NaN.into()),
+            "pi" => Ok(Constant::Pi.into()),
+            "π" => Ok(Constant::Pi.into()),
+            _ => Err(Error::Parse(format!("Unknown constant {}", name))),
+        }
     }
 
     fn build_function(&mut self, name: String, args: Vec<Expression>) -> Result<Expression, Error> {
@@ -120,25 +124,21 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn build_number(&mut self, n: String) -> Result<Expression, Error> {
-        Ok(Expression::Number(n.parse::<f64>()?))
+    /// Builds a number node from a number literal
+    fn build_number(&mut self, literal: String) -> Result<Expression, Error> {
+        Ok(literal.parse::<f64>()?.into())
     }
 
+    /// Grabs the next lexer token if it satisfies the predicate function
     fn next_if<F>(&mut self, predicate: F) -> Option<Token>
     where
         F: Fn(&Token) -> bool,
     {
-        let token = match self.lexer.peek()? {
-            Ok(t) => t,
-            Err(_) => return None,
-        };
-        if predicate(token) {
-            self.lexer.next()?.ok()
-        } else {
-            None
-        }
+        self.lexer.peek().cloned()?.ok().filter(|t| predicate(t))?;
+        self.lexer.next()?.ok()
     }
 
+    /// Parse parses the input string into an expression
     pub fn parse(&mut self) -> Result<Expression, Error> {
         let expr = self.parse_expression(1)?;
         if let Some(result) = self.lexer.next() {
