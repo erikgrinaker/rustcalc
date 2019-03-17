@@ -9,6 +9,7 @@ use super::error::Error;
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Number(String),
+    Ident(String),
     Plus,
     Minus,
     Asterisk,
@@ -24,6 +25,7 @@ impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match self {
             Token::Number(n) => n,
+            Token::Ident(s) => s,
             Token::Plus => "+",
             Token::Minus => "-",
             Token::Asterisk => "*",
@@ -65,9 +67,18 @@ impl<'a> Lexer<'a> {
     fn scan(&mut self) -> Option<Token> {
         self.consume_whitespace();
         None
+            .or_else(|| self.scan_ident())
             .or_else(|| self.scan_number())
             .or_else(|| self.scan_operator())
             .or_else(|| self.scan_parens())
+    }
+
+    fn scan_ident(&mut self) -> Option<Token> {
+        let mut name = self.next_if(|c| c.is_ascii_alphabetic())?.to_string();
+        if let Some(rest) = self.next_while(|c| c.is_ascii_alphanumeric() || c == '_') {
+            name.push_str(rest.as_str())
+        }
+        Some(Token::Ident(name))
     }
 
     fn scan_number(&mut self) -> Option<Token> {

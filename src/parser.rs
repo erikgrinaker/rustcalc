@@ -3,7 +3,7 @@
 use std::iter::Peekable;
 
 use super::error::Error;
-use super::expression::Expression;
+use super::expression::{Constant, Expression};
 use super::lexer::{Lexer, Token};
 
 const ASSOCIATES_LEFT: i8 = 1;
@@ -19,6 +19,7 @@ impl Token {
 
     fn precedence(&self) -> i8 {
         match self {
+            Token::Ident(..) => 0,
             Token::Number(..) => 0,
             Token::OpenParen => 0,
             Token::CloseParen => 0,
@@ -70,7 +71,8 @@ impl<'a> Parser<'a> {
         let token = self.lexer.next().ok_or_else(||
             Error::Parse("Unexpected end of input".into()))??;
         match token {
-            Token::Number(n) => self.parse_number(n.to_string()),
+            Token::Ident(n) => self.parse_constant(n.clone()),
+            Token::Number(n) => self.parse_number(n.clone()),
             Token::Minus => Ok(Expression::Negate(Box::new(self.parse_atom()?))),
             Token::Plus => Ok(self.parse_atom()?),
             Token::OpenParen => {
@@ -118,6 +120,18 @@ impl<'a> Parser<'a> {
             };
         };
         Ok(lhs)
+    }
+
+    fn parse_constant(&mut self, name: String) -> Result<Expression, Error> {
+        Ok(Expression::Constant(
+            match name.to_lowercase().as_str() {
+                "e" => Constant::E,
+                "inf" => Constant::Infinity,
+                "nan" => Constant::NaN,
+                "pi" => Constant::Pi,
+                _ => return Err(Error::Parse(format!("Unknown constant {}", name))),
+            }
+        ))
     }
 
     fn parse_number(&mut self, n: String) -> Result<Expression, Error> {
