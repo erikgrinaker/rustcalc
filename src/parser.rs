@@ -1,8 +1,8 @@
 use std::iter::Peekable;
 
-use super::error::Error;
-use super::expression::{Constant, Expression};
-use super::lexer::{Lexer, Token};
+use crate::error::Error;
+use crate::expression::{Constant, Expression};
+use crate::lexer::{Lexer, Token};
 
 const ASSOCIATES_LEFT: i8 = 1;
 const ASSOCIATES_RIGHT: i8 = 0;

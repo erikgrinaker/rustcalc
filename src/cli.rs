@@ -5,8 +5,8 @@ use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_v
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-use super::error::Error;
-use super::parser::Parser;
+use crate::error::Error;
+use crate::parser::Parser;
 
 /// The main CLI application
 pub struct CLI {

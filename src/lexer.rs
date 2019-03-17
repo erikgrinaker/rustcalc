@@ -2,7 +2,7 @@ use std::fmt;
 use std::iter::Peekable;
 use std::str::Chars;
 
-use super::error::Error;
+use crate::error::Error;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
