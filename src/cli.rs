@@ -1,36 +1,57 @@
+extern crate clap;
 extern crate rustyline;
 
+use clap::{app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 use super::error::Error;
 use super::parser::Parser;
 
+/// The main CLI application
 pub struct CLI {
+    debug: bool,
     prompt: Editor<()>,
 }
 
 impl Default for CLI {
     fn default() -> Self {
-        CLI::new()
+        Self::new()
     }
 }
 
 impl CLI {
-    pub fn new() -> CLI {
-        CLI {
+    /// Creates a new CLI application
+    pub fn new() -> Self {
+        Self {
+            debug: false,
             prompt: Editor::<()>::new(),
         }
     }
 
-    pub fn evaluate(&mut self, input: &str) -> Result<Option<f64>, Error> {
+    /// Parses and evaluates the input expression, returning the numerical result
+    fn evaluate(&mut self, input: &str) -> Result<Option<f64>, Error> {
         if !input.is_empty() {
-            Parser::new(input).parse().map(|expr| Some(expr.evaluate()))
+            let expr = Parser::new(input).parse()?;
+            if self.debug {
+                println!("{:#?}", expr);
+            }
+            Ok(Some(expr.evaluate()))
         } else {
             Ok(None)
         }
     }
 
+    /// Parses and evaluates the input expressions, printing the result to stdout
+    fn evaluate_print(&mut self, input: &str) {
+        match self.evaluate(&input) {
+            Ok(Some(result)) => println!("{}", result),
+            Err(err) => println!("Error: {}", err),
+            Ok(None) => {}
+        }
+    }
+
+    /// Prompts the user for an input expression and returns it
     fn prompt(&mut self) -> Result<Option<String>, Error> {
         match self.prompt.readline("> ") {
             Ok(input) => {
@@ -43,15 +64,26 @@ impl CLI {
         }
     }
 
+    /// Runs the CLI application
     pub fn run(&mut self) -> Result<(), Error> {
+        let opts = app_from_crate!()
+            .arg(
+                Arg::with_name("debug")
+                    .short("d")
+                    .long("debug")
+                    .help("Enables debug output"),
+            )
+            .arg(Arg::with_name("expr").index(1))
+            .get_matches();
+        self.debug = opts.is_present("debug");
+
+        if let Some(input) = opts.value_of("expr") {
+            self.evaluate_print(&input);
+            return Ok(());
+        }
+
         while let Some(input) = self.prompt()? {
-            match self.evaluate(&input) {
-                Ok(Some(n)) => {
-                    println!("{}", n)
-                },
-                Err(e) => println!("Error: {}", e),
-                Ok(None) => continue,
-            }
+            self.evaluate_print(&input)
         }
         Ok(())
     }

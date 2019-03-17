@@ -1,8 +1,10 @@
 [package]
 name = "rustcalc"
+description = "A simple REPL for mathematical expressions"
 version = "0.1.0"
 authors = ["Erik Grinaker <erik@grinaker.org>"]
 edition = "2018"
 
 [dependencies]
+clap = "2.32.0"
 rustyline = "3.0.0"
