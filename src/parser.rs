@@ -131,6 +131,7 @@ impl<'a> Parser<'a> {
                 "inf" => Constant::Infinity,
                 "nan" => Constant::NaN,
                 "pi" => Constant::Pi,
+                "π" => Constant::Pi,
                 _ => return Err(Error::Parse(format!("Unknown constant {}", name))),
             }
         ))

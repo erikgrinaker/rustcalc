@@ -76,8 +76,8 @@ impl<'a> Lexer<'a> {
     }
 
     fn scan_ident(&mut self) -> Option<Token> {
-        let mut name = self.next_if(|c| c.is_ascii_alphabetic())?.to_string();
-        if let Some(rest) = self.next_while(|c| c.is_ascii_alphanumeric() || c == '_') {
+        let mut name = self.next_if(|c| c.is_alphabetic())?.to_string();
+        if let Some(rest) = self.next_while(|c| c.is_alphanumeric() || c == '_') {
             name.push_str(rest.as_str())
         }
         Some(Token::Ident(name))
