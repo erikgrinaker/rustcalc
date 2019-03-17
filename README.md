@@ -42,7 +42,7 @@ Rustcalc supports simple mathematical expressions with the usual operations, and
 
 Number literals can be expressed with digits and the decimal point `.`, as well as in scientific notation using `e` to signify powers of ten - for example `314`, `3.14`, and `3.14e2`.
 
-Numberical values are always encoded as [64-bit IEEE 754](https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64) `binary64` double-precision floating point numbers. These have a magnitude of roughly 10<sup>-307<sup> to 10<sup>308</sup>, and can represent 15 significant figures with exact precision - beyond this, significant figures are rounded to 53-bit precision.
+Numberical values are always encoded as [64-bit IEEE 754](https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64) `binary64` double-precision floating point numbers. These have a magnitude of roughly 10<sup>-307</sup> to 10<sup>308</sup>, and can represent 15 significant figures with exact precision - beyond this, significant figures are rounded to 53-bit precision.
 
 Arithmetic using integer values is exact up to 53 bits, while arithmetic using decimal values may be inexact due to their machine representation. The special values infinity (`inf`) and not-a-number (`NaN`) are fully supported, and are typically returned for invalid or undefined operations such as division by zero and numeric overflow.
 
