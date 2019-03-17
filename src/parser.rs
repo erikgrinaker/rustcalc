@@ -1,5 +1,3 @@
-#![warn(clippy::all)]
-
 use std::iter::Peekable;
 
 use super::error::Error;

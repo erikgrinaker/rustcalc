@@ -1,5 +1,3 @@
-#![warn(clippy::all)]
-
 use std::io;
 use std::fmt;
 use std::num;

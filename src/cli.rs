@@ -1,4 +1,3 @@
-#![warn(clippy::all)]
 extern crate rustyline;
 
 use rustyline::error::ReadlineError;

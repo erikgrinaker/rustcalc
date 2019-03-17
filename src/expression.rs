@@ -1,5 +1,3 @@
-#![warn(clippy::all)]
-
 use std::f64;
 
 #[derive(Clone, Debug)]

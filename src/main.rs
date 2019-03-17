@@ -1,4 +1,5 @@
 #![warn(clippy::all)]
+
 extern crate rustcalc;
 
 use rustcalc::cli::CLI;
