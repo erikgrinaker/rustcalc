@@ -49,15 +49,17 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Result<Token, Error>> {
-        self.scan().map(Ok).or_else(||
-            self.iter.peek().map(|&c| Err(Error::Parse(format!("Unexpected character {}", c))))
-        )
+        self.scan().map(Ok).or_else(|| {
+            self.iter
+                .peek()
+                .map(|&c| Err(Error::Parse(format!("Unexpected character {}", c))))
+        })
     }
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Lexer<'a> {
-        Lexer{
+        Lexer {
             iter: input.chars().peekable(),
         }
     }
@@ -68,8 +70,7 @@ impl<'a> Lexer<'a> {
 
     fn scan(&mut self) -> Option<Token> {
         self.consume_whitespace();
-        None
-            .or_else(|| self.scan_ident())
+        None.or_else(|| self.scan_ident())
             .or_else(|| self.scan_number())
             .or_else(|| self.scan_operator())
             .or_else(|| self.scan_punctuation())
@@ -126,17 +127,30 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    fn next_if<F>(&mut self, predicate: F) -> Option<char> where F: Fn(char) -> bool {
-        self.iter.peek().cloned().filter(|&c| predicate(c)).and_then(|_| self.iter.next())
+    fn next_if<F>(&mut self, predicate: F) -> Option<char>
+    where
+        F: Fn(char) -> bool,
+    {
+        self.iter
+            .peek()
+            .cloned()
+            .filter(|&c| predicate(c))
+            .and_then(|_| self.iter.next())
     }
 
-    fn next_if_token<F>(&mut self, predicate: F) -> Option<Token> where F: Fn(char) -> Option<Token> {
+    fn next_if_token<F>(&mut self, predicate: F) -> Option<Token>
+    where
+        F: Fn(char) -> Option<Token>,
+    {
         let token = self.iter.peek().and_then(|&c| predicate(c))?;
         self.iter.next();
         Some(token)
     }
 
-    fn next_while<F>(&mut self, predicate: F) -> Option<String> where F: Fn(char) -> bool {
+    fn next_while<F>(&mut self, predicate: F) -> Option<String>
+    where
+        F: Fn(char) -> bool,
+    {
         let mut value = String::new();
         while let Some(c) = self.next_if(&predicate) {
             value.push(c)

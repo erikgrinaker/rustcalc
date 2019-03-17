@@ -41,22 +41,20 @@ pub struct Parser<'a> {
 // This uses the precedence climbing parser algorithm
 impl<'a> Parser<'a> {
     pub fn new(input: &str) -> Parser {
-        Parser{
-            lexer: Lexer::new(input).peekable()
+        Parser {
+            lexer: Lexer::new(input).peekable(),
         }
     }
 
     fn build_constant(&mut self, name: String) -> Result<Expression, Error> {
-        Ok(Expression::Constant(
-            match name.to_lowercase().as_str() {
-                "e" => Constant::E,
-                "inf" => Constant::Infinity,
-                "nan" => Constant::NaN,
-                "pi" => Constant::Pi,
-                "π" => Constant::Pi,
-                _ => return Err(Error::Parse(format!("Unknown constant {}", name))),
-            }
-        ))
+        Ok(Expression::Constant(match name.to_lowercase().as_str() {
+            "e" => Constant::E,
+            "inf" => Constant::Infinity,
+            "nan" => Constant::NaN,
+            "pi" => Constant::Pi,
+            "π" => Constant::Pi,
+            _ => return Err(Error::Parse(format!("Unknown constant {}", name))),
+        }))
     }
 
     fn build_function(&mut self, name: String, args: Vec<Expression>) -> Result<Expression, Error> {
@@ -64,27 +62,60 @@ impl<'a> Parser<'a> {
             if args.len() >= min && args.len() <= max {
                 Ok(args.len())
             } else if min == max {
-                Err(Error::Parse(format!("{}() takes {} args, received {}", name, min, args.len())))
+                Err(Error::Parse(format!(
+                    "{}() takes {} args, received {}",
+                    name,
+                    min,
+                    args.len()
+                )))
             } else {
-                Err(Error::Parse(format!("{}() takes {}-{} args, received {}", name, min, max, args.len())))
+                Err(Error::Parse(format!(
+                    "{}() takes {}-{} args, received {}",
+                    name,
+                    min,
+                    max,
+                    args.len()
+                )))
             }
         };
         let arg = |n: usize| Box::new(args[n].clone());
         match name.to_lowercase().as_str() {
-            "cos" => { count_args(1, 1)?; Ok(Expression::Cosine(arg(0))) },
-            "degrees" => { count_args(1, 1)?; Ok(Expression::Degrees(arg(0))) },
-            "radians" => { count_args(1, 1)?; Ok(Expression::Radians(arg(0))) },
+            "cos" => {
+                count_args(1, 1)?;
+                Ok(Expression::Cosine(arg(0)))
+            }
+            "degrees" => {
+                count_args(1, 1)?;
+                Ok(Expression::Degrees(arg(0)))
+            }
+            "radians" => {
+                count_args(1, 1)?;
+                Ok(Expression::Radians(arg(0)))
+            }
             "round" => {
                 let nargs = count_args(1, 2)?;
-                let decimals = if nargs == 1 { Box::new(Expression::Number(0.0)) } else { arg(1) };
-                Ok(Expression::Round{
+                let decimals = if nargs == 1 {
+                    Box::new(Expression::Number(0.0))
+                } else {
+                    arg(1)
+                };
+                Ok(Expression::Round {
                     value: arg(0),
                     decimals: decimals,
                 })
-            },
-            "sin" => { count_args(1, 1)?; Ok(Expression::Sine(arg(0))) },
-            "sqrt" => { count_args(1, 1)?; Ok(Expression::SquareRoot(arg(0))) },
-            "tan" => { count_args(1, 1)?; Ok(Expression::Tangent(arg(0))) },
+            }
+            "sin" => {
+                count_args(1, 1)?;
+                Ok(Expression::Sine(arg(0)))
+            }
+            "sqrt" => {
+                count_args(1, 1)?;
+                Ok(Expression::SquareRoot(arg(0)))
+            }
+            "tan" => {
+                count_args(1, 1)?;
+                Ok(Expression::Tangent(arg(0)))
+            }
             _ => Err(Error::Parse(format!("Unknown function {}", name))),
         }
     }
@@ -93,7 +124,10 @@ impl<'a> Parser<'a> {
         Ok(Expression::Number(n.parse::<f64>()?))
     }
 
-    fn next_if<F>(&mut self, predicate: F) -> Option<Token> where F: Fn(&Token) -> bool {
+    fn next_if<F>(&mut self, predicate: F) -> Option<Token>
+    where
+        F: Fn(&Token) -> bool,
+    {
         let token = match self.lexer.peek()? {
             Ok(t) => t,
             Err(_) => return None,
@@ -115,8 +149,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_atom(&mut self) -> Result<Expression, Error> {
-        let token = self.lexer.next().ok_or_else(||
-            Error::Parse("Unexpected end of input".into()))??;
+        let token = self
+            .lexer
+            .next()
+            .ok_or_else(|| Error::Parse("Unexpected end of input".into()))??;
         match token {
             Token::Ident(n) => {
                 if self.next_if(|t| *t == Token::OpenParen).is_some() {
@@ -125,18 +161,20 @@ impl<'a> Parser<'a> {
                         if !args.is_empty() {
                             match self.lexer.next() {
                                 Some(Ok(Token::Comma)) if !args.is_empty() => (),
-                                Some(Ok(t)) => return Err(Error::Parse(format!("Unexpected token {}", t))),
+                                Some(Ok(t)) => {
+                                    return Err(Error::Parse(format!("Unexpected token {}", t)));
+                                }
                                 Some(Err(err)) => return Err(err),
                                 None => return Err(Error::Parse("Unexpected end of input".into())),
                             }
                         }
                         args.push(self.parse_expression(1)?);
-                    };
+                    }
                     self.build_function(n.clone(), args)
                 } else {
                     self.build_constant(n.clone())
                 }
-            },
+            }
             Token::Number(n) => self.build_number(n.clone()),
             Token::Minus => Ok(Expression::Negate(Box::new(self.parse_atom()?))),
             Token::Plus => Ok(self.parse_atom()?),
@@ -148,7 +186,7 @@ impl<'a> Parser<'a> {
                 } else {
                     Ok(expr)
                 }
-            },
+            }
             _ => Err(Error::Parse(format!("Unexpected token {}", token))),
         }
     }
@@ -157,34 +195,46 @@ impl<'a> Parser<'a> {
         let mut lhs = self.parse_atom()?;
         while let Some(token) = self.next_if(|t| t.precedence() >= min_prec) {
             lhs = match token {
-                Token::Asterisk => Expression::Multiply{
+                Token::Asterisk => Expression::Multiply {
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
+                    rhs: Box::new(
+                        self.parse_expression(token.precedence() + token.associativity())?,
+                    ),
                 },
-                Token::Caret => Expression::Exponentiate{
+                Token::Caret => Expression::Exponentiate {
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
+                    rhs: Box::new(
+                        self.parse_expression(token.precedence() + token.associativity())?,
+                    ),
                 },
                 Token::Exclamation => Expression::Factorial(Box::new(lhs)),
-                Token::Minus => Expression::Subtract{
+                Token::Minus => Expression::Subtract {
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
+                    rhs: Box::new(
+                        self.parse_expression(token.precedence() + token.associativity())?,
+                    ),
                 },
-                Token::Percent => Expression::Modulo{
+                Token::Percent => Expression::Modulo {
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
+                    rhs: Box::new(
+                        self.parse_expression(token.precedence() + token.associativity())?,
+                    ),
                 },
-                Token::Plus => Expression::Add{
+                Token::Plus => Expression::Add {
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
+                    rhs: Box::new(
+                        self.parse_expression(token.precedence() + token.associativity())?,
+                    ),
                 },
-                Token::Slash => Expression::Divide{
+                Token::Slash => Expression::Divide {
                     lhs: Box::new(lhs),
-                    rhs: Box::new(self.parse_expression(token.precedence() + token.associativity())?),
+                    rhs: Box::new(
+                        self.parse_expression(token.precedence() + token.associativity())?,
+                    ),
                 },
                 _ => break,
             };
-        };
+        }
         Ok(lhs)
     }
 }
