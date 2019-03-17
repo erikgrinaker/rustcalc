@@ -25,6 +25,7 @@ impl Token {
             Token::CloseParen => 0,
             Token::Plus => 1,
             Token::Minus => 1,
+            Token::SquareRoot => 1,
             Token::Asterisk => 2,
             Token::Percent => 2,
             Token::Slash => 2,
@@ -75,6 +76,7 @@ impl<'a> Parser<'a> {
             Token::Number(n) => self.parse_number(n.clone()),
             Token::Minus => Ok(Expression::Negate(Box::new(self.parse_atom()?))),
             Token::Plus => Ok(self.parse_atom()?),
+            Token::SquareRoot => Ok(Expression::SquareRoot(Box::new(self.parse_atom()?))),
             Token::OpenParen => {
                 let expr = self.parse_expression(1)?; // 1 implies stop at )
                 if self.next_if(|t| *t == Token::CloseParen).is_none() {

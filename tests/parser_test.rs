@@ -58,6 +58,14 @@ test_evaluate! {
     negate_infinity:        ("-inf",        Ok(f64::NEG_INFINITY)),
     negate_nan:             ("-nan",        Ok(f64::NAN)),
 
+    sqrt:                   ("√4",          Ok(2.0)),
+    sqrt_negative:          ("√-4",         Ok(f64::NAN)),
+    sqrt_decimal:           ("√4.84",       Ok(2.2)),
+    sqrt_zero:              ("√0",          Ok(0.0)),
+    sqrt_infinity:          ("√inf",        Ok(f64::INFINITY)),
+    sqrt_infinity_neg:      ("√-inf",       Ok(f64::NAN)),
+    sqrt_nan:               ("√nan",        Ok(f64::NAN)),
+
     // Postfix operators
     factorial:              ("5!",          Ok(120.0)),
     factorial_multi:        ("3!!",         Ok(720.0)),

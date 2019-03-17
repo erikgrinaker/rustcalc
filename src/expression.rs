@@ -32,6 +32,7 @@ pub enum Expression {
     Multiply{lhs: Box<Expression>, rhs: Box<Expression>},
     Negate(Box<Expression>),
     Number(f64),
+    SquareRoot(Box<Expression>),
     Subtract{lhs: Box<Expression>, rhs: Box<Expression>},
 }
 
@@ -61,6 +62,7 @@ impl Expression {
             Expression::Multiply{lhs, rhs} => lhs.evaluate() * rhs.evaluate(),
             Expression::Negate(n) => -n.evaluate(),
             Expression::Number(n) => *n,
+            Expression::SquareRoot(n) => n.evaluate().sqrt(),
             Expression::Subtract{lhs, rhs} => lhs.evaluate() - rhs.evaluate(),
         }
     }
