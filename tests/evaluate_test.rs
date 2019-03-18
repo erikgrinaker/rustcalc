@@ -92,9 +92,9 @@ test_evaluate! {
     factorial_nan:          ("nan!",        Ok(f64::NAN)),
 
     // Infix operators
-    infix_multi:            ("1 * / 2",     Err(Error::Parse("Unexpected token /".into()))),
-    infix_bare:             ("*",           Err(Error::Parse("Unexpected token *".into()))),
-    infix_pre:              ("* 2",         Err(Error::Parse("Unexpected token *".into()))),
+    infix_multi:            ("1 * / 2",     Err(Error::Parse("Expected value, found /".into()))),
+    infix_bare:             ("*",           Err(Error::Parse("Expected value, found *".into()))),
+    infix_pre:              ("* 2",         Err(Error::Parse("Expected value, found *".into()))),
     infix_post:             ("2 *",         Err(Error::Parse("Unexpected end of input".into()))),
 
     add:                    ("1 + 2",       Ok(3.0)),
@@ -215,13 +215,13 @@ test_evaluate! {
 
     // Parenthesis
     paren_precedence:       ("(2 + 3)!",    Ok(120.0)),
-    paren_noclose:          ("(1 + 2",      Err(Error::Parse("Closing ) not found".into()))),
+    paren_noclose:          ("(1 + 2",      Err(Error::Parse("Unexpected end of input".into()))),
     paren_noopen:           ("1 + 2 )",     Err(Error::Parse("Unexpected token )".into()))),
 
     // Functions
     func_args:              ("sqrt(1)",                 Ok(1.0)),
-    func_args_comma:        ("sqrt(,)",                 Err(Error::Parse("Unexpected token ,".into()))),
-    func_args_trail_comma:  ("sqrt(1,)",                Err(Error::Parse("Unexpected token )".into()))),
+    func_args_comma:        ("sqrt(,)",                 Err(Error::Parse("Expected value, found ,".into()))),
+    func_args_trail_comma:  ("sqrt(1,)",                Err(Error::Parse("Expected value, found )".into()))),
     func_args_missing:      ("sqrt()",                  Err(Error::Parse("sqrt() takes 1 args, received 0".into()))),
     func_args_many:         ("sqrt(1, 2)",              Err(Error::Parse("sqrt() takes 1 args, received 2".into()))),
     func_args_tight:        ("sqrt(1,2)",               Err(Error::Parse("sqrt() takes 1 args, received 2".into()))),

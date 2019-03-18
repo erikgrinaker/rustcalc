@@ -267,6 +267,26 @@ impl<'a> Parser<'a> {
         Some(operator)
     }
 
+    /// Grabs the next lexer token, and returns it if it was expected
+    /// or otherwise throws an error.
+    fn next_must(&mut self, expect: Option<Token>) -> Result<Option<Token>, Error> {
+        if let Some(t) = expect {
+            let token = self.next()?;
+            if token == t {
+                Ok(Some(token))
+            } else {
+                Err(Error::Parse(format!(
+                    "Expected token {}, found {}",
+                    t, token
+                )))
+            }
+        } else if let Some(token) = self.peek()? {
+            Err(Error::Parse(format!("Unexpected token {}", token)))
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Peeks the next lexer token if any, but converts it from
     /// Option<Result<Token, Error>> to Result<Option<Token>, Error> which is
     /// more convenient to work with (the Iterator trait requires Option<T>).
@@ -280,11 +300,8 @@ impl<'a> Parser<'a> {
     /// Parse parses the input string into an expression
     pub fn parse(&mut self) -> Result<Expression, Error> {
         let expr = self.parse_expression(1)?;
-        if let Some(token) = self.peek()? {
-            Err(Error::Parse(format!("Unexpected token {}", token)))
-        } else {
-            Ok(expr)
-        }
+        self.next_must(None)?;
+        Ok(expr)
     }
 
     fn parse_atom(&mut self) -> Result<Expression, Error> {
@@ -295,10 +312,7 @@ impl<'a> Parser<'a> {
                     let mut args = Vec::new();
                     while self.next_if(|t| *t == Token::CloseParen).is_none() {
                         if !args.is_empty() {
-                            let t = self.next()?;
-                            if t != Token::Comma {
-                                return Err(Error::Parse(format!("Unexpected token {}", t)));
-                            }
+                            self.next_must(Some(Token::Comma))?;
                         }
                         args.push(self.parse_expression(1)?);
                     }
@@ -310,13 +324,10 @@ impl<'a> Parser<'a> {
             Token::Number(n) => self.build_number(n.clone()),
             Token::OpenParen => {
                 let expr = self.parse_expression(1)?; // 1 implies stop at )
-                if self.next_if(|t| *t == Token::CloseParen).is_none() {
-                    Err(Error::Parse("Closing ) not found".into()))
-                } else {
-                    Ok(expr)
-                }
+                self.next_must(Some(Token::CloseParen))?;
+                Ok(expr)
             }
-            _ => Err(Error::Parse(format!("Unexpected token {}", token))),
+            _ => Err(Error::Parse(format!("Expected value, found {}", token))),
         }
     }
 
