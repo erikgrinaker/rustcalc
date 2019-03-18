@@ -129,43 +129,54 @@ impl<'a> Parser<'a> {
         Ok(literal.parse::<f64>()?.into())
     }
 
+    /// Grabs the next lexer token, or throws an error if none is found.
+    fn next(&mut self) -> Result<Token, Error> {
+        self.lexer.next().map_or_else(
+            || Err(Error::Parse("Unexpected end of input".into())),
+            |r| Ok(r?),
+        )
+    }
+
     /// Grabs the next lexer token if it satisfies the predicate function
     fn next_if<F>(&mut self, predicate: F) -> Option<Token>
     where
         F: Fn(&Token) -> bool,
     {
-        self.lexer.peek().cloned()?.ok().filter(|t| predicate(t))?;
-        self.lexer.next()?.ok()
+        self.peek().unwrap_or(None).filter(|t| predicate(&t))?;
+        self.next().ok()
+    }
+
+    /// Peeks the next lexer token if any, but converts it from
+    /// Option<Result<Token, Error>> to Result<Option<Token>, Error> which is
+    /// more convenient to work with (the Iterator trait requires Option<T>).
+    fn peek(&mut self) -> Result<Option<Token>, Error> {
+        self.lexer
+            .peek()
+            .cloned()
+            .map_or_else(|| Ok(None), |r| Ok(Some(r?)))
     }
 
     /// Parse parses the input string into an expression
     pub fn parse(&mut self) -> Result<Expression, Error> {
         let expr = self.parse_expression(1)?;
-        if let Some(result) = self.lexer.next() {
-            Err(Error::Parse(format!("Unexpected token {}", result?)))
+        if let Some(token) = self.peek()? {
+            Err(Error::Parse(format!("Unexpected token {}", token)))
         } else {
             Ok(expr)
         }
     }
 
     fn parse_atom(&mut self) -> Result<Expression, Error> {
-        let token = self
-            .lexer
-            .next()
-            .ok_or_else(|| Error::Parse("Unexpected end of input".into()))??;
+        let token = self.next()?;
         match token {
             Token::Ident(n) => {
                 if self.next_if(|t| *t == Token::OpenParen).is_some() {
                     let mut args = Vec::new();
                     while self.next_if(|t| *t == Token::CloseParen).is_none() {
                         if !args.is_empty() {
-                            match self.lexer.next() {
-                                Some(Ok(Token::Comma)) if !args.is_empty() => (),
-                                Some(Ok(t)) => {
-                                    return Err(Error::Parse(format!("Unexpected token {}", t)));
-                                }
-                                Some(Err(err)) => return Err(err),
-                                None => return Err(Error::Parse("Unexpected end of input".into())),
+                            let t = self.next()?;
+                            if t != Token::Comma {
+                                return Err(Error::Parse(format!("Unexpected token {}", t)));
                             }
                         }
                         args.push(self.parse_expression(1)?);
