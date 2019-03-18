@@ -9,9 +9,6 @@ const ASSOCIATES_RIGHT: i8 = 0;
 
 trait Operator: Sized {
     fn from_token(token: &Token) -> Option<Self>;
-    fn is(token: &Token) -> bool {
-        Self::from_token(token).map_or_else(|| false, |_| true)
-    }
     fn associativity(&self) -> i8;
     fn precedence(&self) -> i8;
 }
