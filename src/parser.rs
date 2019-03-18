@@ -7,32 +7,145 @@ use crate::lexer::{Lexer, Token};
 const ASSOCIATES_LEFT: i8 = 1;
 const ASSOCIATES_RIGHT: i8 = 0;
 
-impl Token {
-    // Returns the token's associativity
+trait Operator: Sized {
+    fn from_token(token: &Token) -> Option<Self>;
+    fn is(token: &Token) -> bool {
+        Self::from_token(token).map_or_else(|| false, |_| true)
+    }
+    fn associativity(&self) -> i8;
+    fn precedence(&self) -> i8;
+}
+
+enum PrefixOperator {
+    Minus,
+    Plus,
+    SquareRoot,
+}
+
+impl PrefixOperator {
+    fn build(&self, operand: Expression) -> Expression {
+        match self {
+            PrefixOperator::Minus => Expression::Negate(Box::new(operand)),
+            PrefixOperator::Plus => operand,
+            PrefixOperator::SquareRoot => Expression::SquareRoot(Box::new(operand)),
+        }
+    }
+}
+
+impl Operator for PrefixOperator {
+    fn from_token(token: &Token) -> Option<Self> {
+        match token {
+            Token::Minus => Some(PrefixOperator::Minus),
+            Token::Plus => Some(PrefixOperator::Plus),
+            Token::SquareRoot => Some(PrefixOperator::SquareRoot),
+            _ => None,
+        }
+    }
+
+    fn associativity(&self) -> i8 {
+        ASSOCIATES_RIGHT
+    }
+
+    fn precedence(&self) -> i8 {
+        5
+    }
+}
+
+enum InfixOperator {
+    Add,
+    Divide,
+    Exponentiate,
+    Modulo,
+    Multiply,
+    Subtract,
+}
+
+impl InfixOperator {
+    fn build(&self, lhs: Expression, rhs: Expression) -> Expression {
+        match self {
+            InfixOperator::Add => Expression::Add {
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            },
+            InfixOperator::Divide => Expression::Divide {
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            },
+            InfixOperator::Exponentiate => Expression::Exponentiate {
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            },
+            InfixOperator::Modulo => Expression::Modulo {
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            },
+            InfixOperator::Multiply => Expression::Multiply {
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            },
+            InfixOperator::Subtract => Expression::Subtract {
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            },
+        }
+    }
+}
+
+impl Operator for InfixOperator {
+    fn from_token(token: &Token) -> Option<Self> {
+        match token {
+            Token::Plus => Some(InfixOperator::Add),
+            Token::Minus => Some(InfixOperator::Subtract),
+            Token::Asterisk => Some(InfixOperator::Multiply),
+            Token::Slash => Some(InfixOperator::Divide),
+            Token::Percent => Some(InfixOperator::Modulo),
+            Token::Caret => Some(InfixOperator::Exponentiate),
+            _ => None,
+        }
+    }
+
     fn associativity(&self) -> i8 {
         match self {
-            Token::Caret => ASSOCIATES_RIGHT,
+            InfixOperator::Exponentiate => ASSOCIATES_RIGHT,
             _ => ASSOCIATES_LEFT,
         }
     }
 
-    // Returns the token's precedence
     fn precedence(&self) -> i8 {
         match self {
-            Token::Ident(..) => 0,
-            Token::Number(..) => 0,
-            Token::OpenParen => 0,
-            Token::CloseParen => 0,
-            Token::Comma => 0,
-            Token::Plus => 1,
-            Token::Minus => 1,
-            Token::SquareRoot => 1,
-            Token::Asterisk => 2,
-            Token::Percent => 2,
-            Token::Slash => 2,
-            Token::Caret => 3,
-            Token::Exclamation => 4,
+            InfixOperator::Add | InfixOperator::Subtract => 1,
+            InfixOperator::Multiply | InfixOperator::Divide | InfixOperator::Modulo => 2,
+            InfixOperator::Exponentiate => 3,
         }
+    }
+}
+
+enum PostfixOperator {
+    Factorial,
+}
+
+impl PostfixOperator {
+    fn build(&self, operand: Expression) -> Expression {
+        match self {
+            PostfixOperator::Factorial => Expression::Factorial(Box::new(operand)),
+        }
+    }
+}
+
+impl Operator for PostfixOperator {
+    fn from_token(token: &Token) -> Option<Self> {
+        match token {
+            Token::Exclamation => Some(PostfixOperator::Factorial),
+            _ => None,
+        }
+    }
+
+    fn associativity(&self) -> i8 {
+        ASSOCIATES_LEFT
+    }
+
+    fn precedence(&self) -> i8 {
+        4
     }
 }
 
@@ -146,6 +259,17 @@ impl<'a> Parser<'a> {
         self.next().ok()
     }
 
+    /// Grabs the next operator if the operizer function returns one
+    fn next_if_operator<F, T>(&mut self, operizer: F) -> Option<T>
+    where
+        F: Fn(&Token) -> Option<T>,
+        T: Operator,
+    {
+        let operator = self.peek().unwrap_or(None).and_then(|t| operizer(&t))?;
+        self.next().ok();
+        Some(operator)
+    }
+
     /// Peeks the next lexer token if any, but converts it from
     /// Option<Result<Token, Error>> to Result<Option<Token>, Error> which is
     /// more convenient to work with (the Iterator trait requires Option<T>).
@@ -187,9 +311,6 @@ impl<'a> Parser<'a> {
                 }
             }
             Token::Number(n) => self.build_number(n.clone()),
-            Token::Minus => Ok(Expression::Negate(Box::new(self.parse_atom()?))),
-            Token::Plus => Ok(self.parse_atom()?),
-            Token::SquareRoot => Ok(Expression::SquareRoot(Box::new(self.parse_atom()?))),
             Token::OpenParen => {
                 let expr = self.parse_expression(1)?; // 1 implies stop at )
                 if self.next_if(|t| *t == Token::CloseParen).is_none() {
@@ -203,48 +324,23 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, min_prec: i8) -> Result<Expression, Error> {
-        let mut lhs = self.parse_atom()?;
-        while let Some(token) = self.next_if(|t| t.precedence() >= min_prec) {
-            lhs = match token {
-                Token::Asterisk => Expression::Multiply {
-                    lhs: Box::new(lhs),
-                    rhs: Box::new(
-                        self.parse_expression(token.precedence() + token.associativity())?,
-                    ),
-                },
-                Token::Caret => Expression::Exponentiate {
-                    lhs: Box::new(lhs),
-                    rhs: Box::new(
-                        self.parse_expression(token.precedence() + token.associativity())?,
-                    ),
-                },
-                Token::Exclamation => Expression::Factorial(Box::new(lhs)),
-                Token::Minus => Expression::Subtract {
-                    lhs: Box::new(lhs),
-                    rhs: Box::new(
-                        self.parse_expression(token.precedence() + token.associativity())?,
-                    ),
-                },
-                Token::Percent => Expression::Modulo {
-                    lhs: Box::new(lhs),
-                    rhs: Box::new(
-                        self.parse_expression(token.precedence() + token.associativity())?,
-                    ),
-                },
-                Token::Plus => Expression::Add {
-                    lhs: Box::new(lhs),
-                    rhs: Box::new(
-                        self.parse_expression(token.precedence() + token.associativity())?,
-                    ),
-                },
-                Token::Slash => Expression::Divide {
-                    lhs: Box::new(lhs),
-                    rhs: Box::new(
-                        self.parse_expression(token.precedence() + token.associativity())?,
-                    ),
-                },
-                _ => break,
-            };
+        let mut lhs = if let Some(prefix) = self.next_if_operator(PrefixOperator::from_token) {
+            prefix.build(self.parse_expression(prefix.precedence() + prefix.associativity())?)
+        } else {
+            self.parse_atom()?
+        };
+        while let Some(postfix) = self.next_if_operator(|t| {
+            PostfixOperator::from_token(t).filter(|o| o.precedence() >= min_prec)
+        }) {
+            lhs = postfix.build(lhs)
+        }
+        while let Some(infix) = self.next_if_operator(|t| {
+            InfixOperator::from_token(t).filter(|o| o.precedence() >= min_prec)
+        }) {
+            lhs = infix.build(
+                lhs,
+                self.parse_expression(infix.precedence() + infix.associativity())?,
+            )
         }
         Ok(lhs)
     }
