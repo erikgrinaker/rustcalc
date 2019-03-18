@@ -25,9 +25,9 @@ enum PrefixOperator {
 impl PrefixOperator {
     fn build(&self, operand: Expression) -> Expression {
         match self {
-            PrefixOperator::Minus => Expression::Negate(Box::new(operand)),
+            PrefixOperator::Minus => Expression::Negate(operand.into()),
             PrefixOperator::Plus => operand,
-            PrefixOperator::SquareRoot => Expression::SquareRoot(Box::new(operand)),
+            PrefixOperator::SquareRoot => Expression::SquareRoot(operand.into()),
         }
     }
 }
@@ -64,28 +64,28 @@ impl InfixOperator {
     fn build(&self, lhs: Expression, rhs: Expression) -> Expression {
         match self {
             InfixOperator::Add => Expression::Add {
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
+                lhs: lhs.into(),
+                rhs: rhs.into(),
             },
             InfixOperator::Divide => Expression::Divide {
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
+                lhs: lhs.into(),
+                rhs: rhs.into(),
             },
             InfixOperator::Exponentiate => Expression::Exponentiate {
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
+                lhs: lhs.into(),
+                rhs: rhs.into(),
             },
             InfixOperator::Modulo => Expression::Modulo {
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
+                lhs: lhs.into(),
+                rhs: rhs.into(),
             },
             InfixOperator::Multiply => Expression::Multiply {
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
+                lhs: lhs.into(),
+                rhs: rhs.into(),
             },
             InfixOperator::Subtract => Expression::Subtract {
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
+                lhs: lhs.into(),
+                rhs: rhs.into(),
             },
         }
     }
@@ -127,7 +127,7 @@ enum PostfixOperator {
 impl PostfixOperator {
     fn build(&self, operand: Expression) -> Expression {
         match self {
-            PostfixOperator::Factorial => Expression::Factorial(Box::new(operand)),
+            PostfixOperator::Factorial => Expression::Factorial(operand.into()),
         }
     }
 }
@@ -195,7 +195,7 @@ impl<'a> Parser<'a> {
                 )))
             }
         };
-        let arg = |n: usize| Box::new(args[n].clone());
+        let arg = |n: usize| args[n].clone().into();
         match name.to_lowercase().as_str() {
             "cos" => {
                 count_args(1, 1)?;
@@ -212,7 +212,7 @@ impl<'a> Parser<'a> {
             "round" => {
                 let nargs = count_args(1, 2)?;
                 let decimals = if nargs == 1 {
-                    Box::new(Expression::Number(0.0))
+                    Expression::Number(0.0).into()
                 } else {
                     arg(1)
                 };
