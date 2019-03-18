@@ -275,8 +275,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_atom(&mut self) -> Result<Expression, Error> {
-        let token = self.next()?;
-        match token {
+        match self.next()? {
             Token::Ident(n) => {
                 if self.next_if(|t| *t == Token::OpenParen).is_some() {
                     let mut args = Vec::new();
@@ -297,7 +296,7 @@ impl<'a> Parser<'a> {
                 self.next_must(Some(Token::CloseParen))?;
                 Ok(expr)
             }
-            _ => Err(Error::Parse(format!("Expected value, found {}", token))),
+            token => Err(Error::Parse(format!("Expected value, found {}", token))),
         }
     }
 
