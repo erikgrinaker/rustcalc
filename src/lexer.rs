@@ -65,9 +65,7 @@ impl<'a> Iterator for Lexer<'a> {
 
     fn next(&mut self) -> Option<Result<Token, Error>> {
         self.scan().map(Ok).or_else(|| {
-            self.iter
-                .peek()
-                .map(|&c| Err(Error::Parse(format!("Unexpected character {}", c))))
+            self.iter.peek().map(|&c| Err(Error::Parse(format!("Unexpected character {}", c))))
         })
     }
 }
@@ -75,9 +73,7 @@ impl<'a> Iterator for Lexer<'a> {
 impl<'a> Lexer<'a> {
     /// Creates a new lexer for the given input string
     pub fn new(input: &'a str) -> Lexer<'a> {
-        Lexer {
-            iter: input.chars().peekable(),
-        }
+        Lexer { iter: input.chars().peekable() }
     }
 
     /// Consumes any whitespace characters

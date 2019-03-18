@@ -23,10 +23,7 @@ impl Default for CLI {
 impl CLI {
     /// Creates a new CLI application
     pub fn new() -> Self {
-        Self {
-            debug: false,
-            prompt: Editor::<()>::new(),
-        }
+        Self { debug: false, prompt: Editor::<()>::new() }
     }
 
     /// Parses and evaluates the input expression, returning the numerical result
@@ -58,12 +55,7 @@ impl CLI {
     /// Runs the CLI application
     pub fn run(&mut self) -> Result<(), Error> {
         let opts = app_from_crate!()
-            .arg(
-                Arg::with_name("debug")
-                    .short("d")
-                    .long("debug")
-                    .help("Enables debug output"),
-            )
+            .arg(Arg::with_name("debug").short("d").long("debug").help("Enables debug output"))
             .arg(Arg::with_name("expr").index(1))
             .get_matches();
         self.debug = opts.is_present("debug");

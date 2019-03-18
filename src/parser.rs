@@ -21,20 +21,22 @@ enum PrefixOperator {
 
 impl PrefixOperator {
     fn build(&self, operand: Expression) -> Expression {
+        use PrefixOperator::*;
         match self {
-            PrefixOperator::Minus => Expression::Negate(operand.into()),
-            PrefixOperator::Plus => operand,
-            PrefixOperator::SquareRoot => Expression::SquareRoot(operand.into()),
+            Minus => Expression::Negate(operand.into()),
+            Plus => operand,
+            SquareRoot => Expression::SquareRoot(operand.into()),
         }
     }
 }
 
 impl Operator for PrefixOperator {
     fn from_token(token: &Token) -> Option<Self> {
+        use PrefixOperator::*;
         match token {
-            Token::Minus => Some(PrefixOperator::Minus),
-            Token::Plus => Some(PrefixOperator::Plus),
-            Token::SquareRoot => Some(PrefixOperator::SquareRoot),
+            Token::Minus => Some(Minus),
+            Token::Plus => Some(Plus),
+            Token::SquareRoot => Some(SquareRoot),
             _ => None,
         }
     }
@@ -59,60 +61,46 @@ enum InfixOperator {
 
 impl InfixOperator {
     fn build(&self, lhs: Expression, rhs: Expression) -> Expression {
+        use InfixOperator::*;
         match self {
-            InfixOperator::Add => Expression::Add {
-                lhs: lhs.into(),
-                rhs: rhs.into(),
-            },
-            InfixOperator::Divide => Expression::Divide {
-                lhs: lhs.into(),
-                rhs: rhs.into(),
-            },
-            InfixOperator::Exponentiate => Expression::Exponentiate {
-                lhs: lhs.into(),
-                rhs: rhs.into(),
-            },
-            InfixOperator::Modulo => Expression::Modulo {
-                lhs: lhs.into(),
-                rhs: rhs.into(),
-            },
-            InfixOperator::Multiply => Expression::Multiply {
-                lhs: lhs.into(),
-                rhs: rhs.into(),
-            },
-            InfixOperator::Subtract => Expression::Subtract {
-                lhs: lhs.into(),
-                rhs: rhs.into(),
-            },
+            Add => Expression::Add { lhs: lhs.into(), rhs: rhs.into() },
+            Divide => Expression::Divide { lhs: lhs.into(), rhs: rhs.into() },
+            Exponentiate => Expression::Exponentiate { lhs: lhs.into(), rhs: rhs.into() },
+            Modulo => Expression::Modulo { lhs: lhs.into(), rhs: rhs.into() },
+            Multiply => Expression::Multiply { lhs: lhs.into(), rhs: rhs.into() },
+            Subtract => Expression::Subtract { lhs: lhs.into(), rhs: rhs.into() },
         }
     }
 }
 
 impl Operator for InfixOperator {
     fn from_token(token: &Token) -> Option<Self> {
+        use InfixOperator::*;
         match token {
-            Token::Plus => Some(InfixOperator::Add),
-            Token::Minus => Some(InfixOperator::Subtract),
-            Token::Asterisk => Some(InfixOperator::Multiply),
-            Token::Slash => Some(InfixOperator::Divide),
-            Token::Percent => Some(InfixOperator::Modulo),
-            Token::Caret => Some(InfixOperator::Exponentiate),
+            Token::Plus => Some(Add),
+            Token::Minus => Some(Subtract),
+            Token::Asterisk => Some(Multiply),
+            Token::Slash => Some(Divide),
+            Token::Percent => Some(Modulo),
+            Token::Caret => Some(Exponentiate),
             _ => None,
         }
     }
 
     fn associativity(&self) -> i8 {
+        use InfixOperator::*;
         match self {
-            InfixOperator::Exponentiate => ASSOCIATES_RIGHT,
+            Exponentiate => ASSOCIATES_RIGHT,
             _ => ASSOCIATES_LEFT,
         }
     }
 
     fn precedence(&self) -> i8 {
+        use InfixOperator::*;
         match self {
-            InfixOperator::Add | InfixOperator::Subtract => 1,
-            InfixOperator::Multiply | InfixOperator::Divide | InfixOperator::Modulo => 2,
-            InfixOperator::Exponentiate => 3,
+            Add | Subtract => 1,
+            Multiply | Divide | Modulo => 2,
+            Exponentiate => 3,
         }
     }
 }
@@ -123,16 +111,18 @@ enum PostfixOperator {
 
 impl PostfixOperator {
     fn build(&self, operand: Expression) -> Expression {
+        use PostfixOperator::*;
         match self {
-            PostfixOperator::Factorial => Expression::Factorial(operand.into()),
+            Factorial => Expression::Factorial(operand.into()),
         }
     }
 }
 
 impl Operator for PostfixOperator {
     fn from_token(token: &Token) -> Option<Self> {
+        use PostfixOperator::*;
         match token {
-            Token::Exclamation => Some(PostfixOperator::Factorial),
+            Token::Exclamation => Some(Factorial),
             _ => None,
         }
     }
@@ -154,19 +144,18 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     /// Creates a new parser for the given input string
     pub fn new(input: &str) -> Parser {
-        Parser {
-            lexer: Lexer::new(input).peekable(),
-        }
+        Parser { lexer: Lexer::new(input).peekable() }
     }
 
     /// Builds a constant expression node from a constant name
     fn build_constant(&mut self, name: String) -> Result<Expression, Error> {
+        use Constant::*;
         match name.to_lowercase().as_str() {
-            "e" => Ok(Constant::E.into()),
-            "inf" => Ok(Constant::Infinity.into()),
-            "nan" => Ok(Constant::NaN.into()),
-            "pi" => Ok(Constant::Pi.into()),
-            "π" => Ok(Constant::Pi.into()),
+            "e" => Ok(E.into()),
+            "inf" => Ok(Infinity.into()),
+            "nan" => Ok(NaN.into()),
+            "pi" => Ok(Pi.into()),
+            "π" => Ok(Pi.into()),
             _ => Err(Error::Parse(format!("Unknown constant {}", name))),
         }
     }
@@ -176,12 +165,7 @@ impl<'a> Parser<'a> {
             if args.len() >= min && args.len() <= max {
                 Ok(args.len())
             } else if min == max {
-                Err(Error::Parse(format!(
-                    "{}() takes {} args, received {}",
-                    name,
-                    min,
-                    args.len()
-                )))
+                Err(Error::Parse(format!("{}() takes {} args, received {}", name, min, args.len())))
             } else {
                 Err(Error::Parse(format!(
                     "{}() takes {}-{} args, received {}",
@@ -208,15 +192,8 @@ impl<'a> Parser<'a> {
             }
             "round" => {
                 let nargs = count_args(1, 2)?;
-                let decimals = if nargs == 1 {
-                    Expression::Number(0.0).into()
-                } else {
-                    arg(1)
-                };
-                Ok(Expression::Round {
-                    value: arg(0),
-                    decimals: decimals,
-                })
+                let decimals = if nargs == 1 { Expression::Number(0.0).into() } else { arg(1) };
+                Ok(Expression::Round { value: arg(0), decimals: decimals })
             }
             "sin" => {
                 count_args(1, 1)?;
@@ -241,10 +218,9 @@ impl<'a> Parser<'a> {
 
     /// Grabs the next lexer token, or throws an error if none is found.
     fn next(&mut self) -> Result<Token, Error> {
-        self.lexer.next().map_or_else(
-            || Err(Error::Parse("Unexpected end of input".into())),
-            |r| Ok(r?),
-        )
+        self.lexer
+            .next()
+            .map_or_else(|| Err(Error::Parse("Unexpected end of input".into())), |r| Ok(r?))
     }
 
     /// Grabs the next lexer token if it satisfies the predicate function
@@ -275,10 +251,7 @@ impl<'a> Parser<'a> {
             if token == t {
                 Ok(Some(token))
             } else {
-                Err(Error::Parse(format!(
-                    "Expected token {}, found {}",
-                    t, token
-                )))
+                Err(Error::Parse(format!("Expected token {}, found {}", t, token)))
             }
         } else if let Some(token) = self.peek()? {
             Err(Error::Parse(format!("Unexpected token {}", token)))
@@ -291,10 +264,7 @@ impl<'a> Parser<'a> {
     /// Option<Result<Token, Error>> to Result<Option<Token>, Error> which is
     /// more convenient to work with (the Iterator trait requires Option<T>).
     fn peek(&mut self) -> Result<Option<Token>, Error> {
-        self.lexer
-            .peek()
-            .cloned()
-            .map_or_else(|| Ok(None), |r| Ok(Some(r?)))
+        self.lexer.peek().cloned().map_or_else(|| Ok(None), |r| Ok(Some(r?)))
     }
 
     /// Parse parses the input string into an expression
@@ -345,10 +315,8 @@ impl<'a> Parser<'a> {
         while let Some(infix) = self.next_if_operator(|t| {
             InfixOperator::from_token(t).filter(|o| o.precedence() >= min_prec)
         }) {
-            lhs = infix.build(
-                lhs,
-                self.parse_expression(infix.precedence() + infix.associativity())?,
-            )
+            lhs =
+                infix.build(lhs, self.parse_expression(infix.precedence() + infix.associativity())?)
         }
         Ok(lhs)
     }

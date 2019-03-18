@@ -28,10 +28,7 @@ impl From<&Constant> for f64 {
 #[derive(Clone, Debug)]
 pub enum Expression {
     /// Adds two terms
-    Add {
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
-    },
+    Add { lhs: Box<Expression>, rhs: Box<Expression> },
 
     /// A named mathematical constant
     Constant(Constant),
@@ -43,32 +40,20 @@ pub enum Expression {
     Degrees(Box<Expression>),
 
     /// Divides two values
-    Divide {
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
-    },
+    Divide { lhs: Box<Expression>, rhs: Box<Expression> },
 
     /// Raises the LHS value to the power of the RHS
-    Exponentiate {
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
-    },
+    Exponentiate { lhs: Box<Expression>, rhs: Box<Expression> },
 
     /// Returns the factorial value of the argument
     Factorial(Box<Expression>),
 
     /// Returns the modulo of the arguments, with the sign of the RHS and
     /// magnitude less than the LHS
-    Modulo {
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
-    },
+    Modulo { lhs: Box<Expression>, rhs: Box<Expression> },
 
     /// Multiplies the LHS by the RHS
-    Multiply {
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
-    },
+    Multiply { lhs: Box<Expression>, rhs: Box<Expression> },
 
     /// Negates the argument
     Negate(Box<Expression>),
@@ -81,10 +66,7 @@ pub enum Expression {
 
     /// Rounds a value to a given number of decimals. Returns NaN for negative or
     /// fractional decimals.
-    Round {
-        value: Box<Expression>,
-        decimals: Box<Expression>,
-    },
+    Round { value: Box<Expression>, decimals: Box<Expression> },
 
     /// Returns the sine of the argument angle in radians
     Sine(Box<Expression>),
@@ -93,10 +75,7 @@ pub enum Expression {
     SquareRoot(Box<Expression>),
 
     /// Subtracts the RHS from the LHS
-    Subtract {
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
-    },
+    Subtract { lhs: Box<Expression>, rhs: Box<Expression> },
 
     /// Returns the tangent of the argument angle in radians
     Tangent(Box<Expression>),
