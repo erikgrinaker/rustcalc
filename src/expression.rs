@@ -115,16 +115,11 @@ impl Expression {
             Expression::Degrees(expr) => expr.evaluate().to_degrees(),
             Expression::Divide { lhs, rhs } => lhs.evaluate() / rhs.evaluate(),
             Expression::Exponentiate { lhs, rhs } => lhs.evaluate().powf(rhs.evaluate()),
-            Expression::Factorial(expr) => {
-                let n = expr.evaluate();
-                if n == f64::INFINITY {
-                    n
-                } else if n < 0.0 || n.fract() != 0.0 {
-                    f64::NAN
-                } else {
-                    (1..=n.trunc() as i64).fold(1.0, |a, b| a * b as f64)
-                }
-            }
+            Expression::Factorial(expr) => match expr.evaluate() {
+                n if n == f64::INFINITY => n,
+                n if n < 0.0 || n.fract() != 0.0 => f64::NAN,
+                n => (1..=n.trunc() as i64).fold(1.0, |a, b| a * b as f64),
+            },
             Expression::Modulo { lhs, rhs } => {
                 // The % operator in Rust is remainder, not modulo
                 let l = lhs.evaluate();

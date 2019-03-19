@@ -19,7 +19,7 @@ trait Operator: Sized {
     fn prec(&self) -> u8;
 }
 
-// Prefix operators, e.g. -(1 + 2)
+// Prefix operators
 enum PrefixOperator {
     Minus,
     Plus,
@@ -58,7 +58,7 @@ impl Operator for PrefixOperator {
     }
 }
 
-/// Infix operators, e.g. 1 + 2
+/// Infix operators
 enum InfixOperator {
     Add,
     Divide,
@@ -115,7 +115,7 @@ impl Operator for InfixOperator {
     }
 }
 
-/// Postfix operators, e.g. 5!
+/// Postfix operators
 enum PostfixOperator {
     Factorial,
 }
@@ -161,13 +161,12 @@ impl<'a> Parser<'a> {
 
     /// Builds an expression node from a constant name
     fn build_constant(&self, name: String) -> Result<Expression, Error> {
-        use Constant::*;
         match name.to_lowercase().as_str() {
-            "e" => Ok(E.into()),
-            "inf" => Ok(Infinity.into()),
-            "nan" => Ok(NaN.into()),
-            "pi" => Ok(Pi.into()),
-            "π" => Ok(Pi.into()),
+            "e" => Ok(Constant::E.into()),
+            "inf" => Ok(Constant::Infinity.into()),
+            "nan" => Ok(Constant::NaN.into()),
+            "pi" => Ok(Constant::Pi.into()),
+            "π" => Ok(Constant::Pi.into()),
             _ => Err(Error::Parse(format!("Unknown constant {}", name))),
         }
     }
@@ -177,7 +176,7 @@ impl<'a> Parser<'a> {
         args.reverse();
         let mut arg = || {
             args.pop()
-                .map(|e| e.clone().into())
+                .map(|expr| expr.into())
                 .ok_or_else(|| Error::Parse(format!("Missing argument for {}()", name)))
         };
         let expr = match name.to_lowercase().as_str() {
@@ -206,9 +205,7 @@ impl<'a> Parser<'a> {
 
     /// Grabs the next lexer token, or throws an error if none is found.
     fn next(&mut self) -> Result<Token, Error> {
-        self.lexer
-            .next()
-            .map_or_else(|| Err(Error::Parse("Unexpected end of input".into())), |r| Ok(r?))
+        self.lexer.next().unwrap_or_else(|| Err(Error::Parse("Unexpected end of input".into())))
     }
 
     /// Grabs the next lexer token, and returns it if it was expected or
@@ -239,8 +236,8 @@ impl<'a> Parser<'a> {
         let operator = self
             .peek()
             .unwrap_or(None)
-            .and_then(|t| T::from(&t))
-            .filter(|o| o.prec() >= min_prec)?;
+            .and_then(|token| T::from(&token))
+            .filter(|op| op.prec() >= min_prec)?;
         self.next().ok();
         Some(operator)
     }
@@ -249,7 +246,7 @@ impl<'a> Parser<'a> {
     /// Option<Result<Token, Error>> to Result<Option<Token>, Error> which is
     /// more convenient to work with (the Iterator trait requires Option<T>).
     fn peek(&mut self) -> Result<Option<Token>, Error> {
-        self.lexer.peek().cloned().map_or_else(|| Ok(None), |r| Ok(Some(r?)))
+        self.lexer.peek().cloned().map_or(Ok(None), |r| Ok(Some(r?)))
     }
 
     /// Parses the input string into an expression
@@ -262,7 +259,7 @@ impl<'a> Parser<'a> {
     /// Parses an atom, i.e. a number, constant, function, or parenthesis
     fn parse_atom(&mut self) -> Result<Expression, Error> {
         match self.next()? {
-            Token::Ident(n) => {
+            Token::Ident(name) => {
                 if self.next_if(|t| *t == Token::OpenParen).is_some() {
                     let mut args = Vec::new();
                     while self.next_if(|t| *t == Token::CloseParen).is_none() {
@@ -271,12 +268,12 @@ impl<'a> Parser<'a> {
                         }
                         args.push(self.parse_expression(0)?);
                     }
-                    self.build_function(n.clone(), args)
+                    self.build_function(name, args)
                 } else {
-                    self.build_constant(n.clone())
+                    self.build_constant(name)
                 }
             }
-            Token::Number(n) => self.build_number(n.clone()),
+            Token::Number(n) => self.build_number(n),
             Token::OpenParen => {
                 let expr = self.parse_expression(0)?;
                 self.next_expect(Some(Token::CloseParen))?;

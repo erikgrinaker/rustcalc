@@ -82,29 +82,20 @@ impl<'a> Lexer<'a> {
     }
 
     /// Grabs the next character if it matches the predicate function
-    fn next_if<F>(&mut self, predicate: F) -> Option<char>
-    where
-        F: Fn(char) -> bool,
-    {
+    fn next_if<F: Fn(char) -> bool>(&mut self, predicate: F) -> Option<char> {
         self.iter.peek().filter(|&c| predicate(*c))?;
         self.iter.next()
     }
 
     /// Grabs the next single-character token if the tokenizer function returns one
-    fn next_if_token<F>(&mut self, tokenizer: F) -> Option<Token>
-    where
-        F: Fn(char) -> Option<Token>,
-    {
+    fn next_if_token<F: Fn(char) -> Option<Token>>(&mut self, tokenizer: F) -> Option<Token> {
         let token = self.iter.peek().and_then(|&c| tokenizer(c))?;
         self.iter.next();
         Some(token)
     }
 
     /// Grabs the next characters that match the predicate, as a string
-    fn next_while<F>(&mut self, predicate: F) -> Option<String>
-    where
-        F: Fn(char) -> bool,
-    {
+    fn next_while<F: Fn(char) -> bool>(&mut self, predicate: F) -> Option<String> {
         let mut value = String::new();
         while let Some(c) = self.next_if(&predicate) {
             value.push(c)
