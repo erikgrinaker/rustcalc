@@ -148,7 +148,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Builds a constant expression node from a constant name
-    fn build_constant(&mut self, name: String) -> Result<Expression, Error> {
+    fn build_constant(&self, name: String) -> Result<Expression, Error> {
         use Constant::*;
         match name.to_lowercase().as_str() {
             "e" => Ok(E.into()),
@@ -160,59 +160,35 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn build_function(&mut self, name: String, args: Vec<Expression>) -> Result<Expression, Error> {
-        let count_args = |min, max| {
-            if args.len() >= min && args.len() <= max {
-                Ok(args.len())
-            } else if min == max {
-                Err(Error::Parse(format!("{}() takes {} args, received {}", name, min, args.len())))
-            } else {
-                Err(Error::Parse(format!(
-                    "{}() takes {}-{} args, received {}",
-                    name,
-                    min,
-                    max,
-                    args.len()
-                )))
-            }
+    // Builds an expression node from a function call
+    fn build_function(&self, name: String, mut args: Vec<Expression>) -> Result<Expression, Error> {
+        args.reverse();
+        let mut arg = || {
+            args.pop()
+                .map(|e| e.clone().into())
+                .ok_or_else(|| Error::Parse(format!("Missing argument for {}()", name)))
         };
-        let arg = |n: usize| args[n].clone().into();
-        match name.to_lowercase().as_str() {
-            "cos" => {
-                count_args(1, 1)?;
-                Ok(Expression::Cosine(arg(0)))
-            }
-            "degrees" => {
-                count_args(1, 1)?;
-                Ok(Expression::Degrees(arg(0)))
-            }
-            "radians" => {
-                count_args(1, 1)?;
-                Ok(Expression::Radians(arg(0)))
-            }
+        let expr = match name.to_lowercase().as_str() {
+            "cos" => Expression::Cosine(arg()?),
+            "degrees" => Expression::Degrees(arg()?),
+            "radians" => Expression::Radians(arg()?),
             "round" => {
-                let nargs = count_args(1, 2)?;
-                let decimals = if nargs == 1 { Expression::Number(0.0).into() } else { arg(1) };
-                Ok(Expression::Round { value: arg(0), decimals: decimals })
+                Expression::Round { value: arg()?, decimals: arg().unwrap_or_else(|_| 0.0.into()) }
             }
-            "sin" => {
-                count_args(1, 1)?;
-                Ok(Expression::Sine(arg(0)))
-            }
-            "sqrt" => {
-                count_args(1, 1)?;
-                Ok(Expression::SquareRoot(arg(0)))
-            }
-            "tan" => {
-                count_args(1, 1)?;
-                Ok(Expression::Tangent(arg(0)))
-            }
-            _ => Err(Error::Parse(format!("Unknown function {}", name))),
+            "sin" => Expression::Sine(arg()?),
+            "sqrt" => Expression::SquareRoot(arg()?),
+            "tan" => Expression::Tangent(arg()?),
+            _ => return Err(Error::Parse(format!("Unknown function {}", name))),
+        };
+        if args.is_empty() {
+            Ok(expr)
+        } else {
+            Err(Error::Parse(format!("Unexpected argument for {}()", name)))
         }
     }
 
     /// Builds a number node from a number literal
-    fn build_number(&mut self, literal: String) -> Result<Expression, Error> {
+    fn build_number(&self, literal: String) -> Result<Expression, Error> {
         Ok(literal.parse::<f64>()?.into())
     }
 
@@ -232,7 +208,7 @@ impl<'a> Parser<'a> {
         self.next().ok()
     }
 
-    /// Grabs the next operator if the operizer function returns one
+    /// Grabs the next operator token if the operizer function returns an operator
     fn next_if_operator<F, T>(&mut self, operizer: F) -> Option<T>
     where
         F: Fn(&Token) -> Option<T>,

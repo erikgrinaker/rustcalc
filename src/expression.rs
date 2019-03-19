@@ -93,6 +93,12 @@ impl From<f64> for Expression {
     }
 }
 
+impl From<f64> for Box<Expression> {
+    fn from(n: f64) -> Self {
+        Box::new(Expression::Number(n))
+    }
+}
+
 impl From<&Expression> for f64 {
     fn from(expr: &Expression) -> Self {
         expr.evaluate()
