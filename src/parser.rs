@@ -4,15 +4,22 @@ use crate::error::Error;
 use crate::expression::{Constant, Expression};
 use crate::lexer::{Lexer, Token};
 
-const ASSOCIATES_LEFT: i8 = 1;
-const ASSOCIATES_RIGHT: i8 = 0;
+const ASSOC_LEFT: u8 = 1;
+const ASSOC_RIGHT: u8 = 0;
 
+/// An operator represents a token that operates on surrounding values
 trait Operator: Sized {
-    fn from_token(token: &Token) -> Option<Self>;
-    fn associativity(&self) -> i8;
-    fn precedence(&self) -> i8;
+    /// Creates an operator from a token, if appropriate
+    fn from(token: &Token) -> Option<Self>;
+
+    /// Returns the associativity of the operator
+    fn assoc(&self) -> u8;
+
+    /// Returns the precedence of the operator
+    fn prec(&self) -> u8;
 }
 
+// Prefix operators, e.g. -(1 + 2)
 enum PrefixOperator {
     Minus,
     Plus,
@@ -20,6 +27,7 @@ enum PrefixOperator {
 }
 
 impl PrefixOperator {
+    // Builds an expression node for the prefix operator
     fn build(&self, operand: Expression) -> Expression {
         use PrefixOperator::*;
         match self {
@@ -31,7 +39,7 @@ impl PrefixOperator {
 }
 
 impl Operator for PrefixOperator {
-    fn from_token(token: &Token) -> Option<Self> {
+    fn from(token: &Token) -> Option<Self> {
         use PrefixOperator::*;
         match token {
             Token::Minus => Some(Minus),
@@ -41,15 +49,16 @@ impl Operator for PrefixOperator {
         }
     }
 
-    fn associativity(&self) -> i8 {
-        ASSOCIATES_RIGHT
+    fn assoc(&self) -> u8 {
+        ASSOC_RIGHT
     }
 
-    fn precedence(&self) -> i8 {
+    fn prec(&self) -> u8 {
         5
     }
 }
 
+/// Infix operators, e.g. 1 + 2
 enum InfixOperator {
     Add,
     Divide,
@@ -60,6 +69,7 @@ enum InfixOperator {
 }
 
 impl InfixOperator {
+    // Builds an expression node for the infix operator
     fn build(&self, lhs: Expression, rhs: Expression) -> Expression {
         use InfixOperator::*;
         match self {
@@ -74,7 +84,7 @@ impl InfixOperator {
 }
 
 impl Operator for InfixOperator {
-    fn from_token(token: &Token) -> Option<Self> {
+    fn from(token: &Token) -> Option<Self> {
         use InfixOperator::*;
         match token {
             Token::Plus => Some(Add),
@@ -87,15 +97,15 @@ impl Operator for InfixOperator {
         }
     }
 
-    fn associativity(&self) -> i8 {
+    fn assoc(&self) -> u8 {
         use InfixOperator::*;
         match self {
-            Exponentiate => ASSOCIATES_RIGHT,
-            _ => ASSOCIATES_LEFT,
+            Exponentiate => ASSOC_RIGHT,
+            _ => ASSOC_LEFT,
         }
     }
 
-    fn precedence(&self) -> i8 {
+    fn prec(&self) -> u8 {
         use InfixOperator::*;
         match self {
             Add | Subtract => 1,
@@ -105,11 +115,13 @@ impl Operator for InfixOperator {
     }
 }
 
+/// Postfix operators, e.g. 5!
 enum PostfixOperator {
     Factorial,
 }
 
 impl PostfixOperator {
+    // Builds an expression node for the postfix operator
     fn build(&self, operand: Expression) -> Expression {
         use PostfixOperator::*;
         match self {
@@ -119,7 +131,7 @@ impl PostfixOperator {
 }
 
 impl Operator for PostfixOperator {
-    fn from_token(token: &Token) -> Option<Self> {
+    fn from(token: &Token) -> Option<Self> {
         use PostfixOperator::*;
         match token {
             Token::Exclamation => Some(Factorial),
@@ -127,16 +139,16 @@ impl Operator for PostfixOperator {
         }
     }
 
-    fn associativity(&self) -> i8 {
-        ASSOCIATES_LEFT
+    fn assoc(&self) -> u8 {
+        ASSOC_LEFT
     }
 
-    fn precedence(&self) -> i8 {
+    fn prec(&self) -> u8 {
         4
     }
 }
 
-/// Parses an input string into an expression, by precedence climbing
+/// Parses an input string into an expression
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>,
 }
@@ -147,7 +159,7 @@ impl<'a> Parser<'a> {
         Parser { lexer: Lexer::new(input).peekable() }
     }
 
-    /// Builds a constant expression node from a constant name
+    /// Builds an expression node from a constant name
     fn build_constant(&self, name: String) -> Result<Expression, Error> {
         use Constant::*;
         match name.to_lowercase().as_str() {
@@ -200,21 +212,18 @@ impl<'a> Parser<'a> {
     }
 
     /// Grabs the next lexer token if it satisfies the predicate function
-    fn next_if<F>(&mut self, predicate: F) -> Option<Token>
-    where
-        F: Fn(&Token) -> bool,
-    {
+    fn next_if<F: Fn(&Token) -> bool>(&mut self, predicate: F) -> Option<Token> {
         self.peek().unwrap_or(None).filter(|t| predicate(&t))?;
         self.next().ok()
     }
 
-    /// Grabs the next operator token if the operizer function returns an operator
-    fn next_if_operator<F, T>(&mut self, operizer: F) -> Option<T>
-    where
-        F: Fn(&Token) -> Option<T>,
-        T: Operator,
-    {
-        let operator = self.peek().unwrap_or(None).and_then(|t| operizer(&t))?;
+    /// Grabs the next operator token if it satisfies the type and precedence
+    fn next_if_operator<T: Operator>(&mut self, min_prec: u8) -> Option<T> {
+        let operator = self
+            .peek()
+            .unwrap_or(None)
+            .and_then(|t| T::from(&t))
+            .filter(|o| o.prec() >= min_prec)?;
         self.next().ok();
         Some(operator)
     }
@@ -243,13 +252,14 @@ impl<'a> Parser<'a> {
         self.lexer.peek().cloned().map_or_else(|| Ok(None), |r| Ok(Some(r?)))
     }
 
-    /// Parse parses the input string into an expression
+    /// Parses the input string into an expression
     pub fn parse(&mut self) -> Result<Expression, Error> {
         let expr = self.parse_expression(1)?;
         self.next_must(None)?;
         Ok(expr)
     }
 
+    /// Parses an atom, i.e. a number, constant, function, or parenthesis
     fn parse_atom(&mut self) -> Result<Expression, Error> {
         match self.next()? {
             Token::Ident(n) => {
@@ -272,26 +282,23 @@ impl<'a> Parser<'a> {
                 self.next_must(Some(Token::CloseParen))?;
                 Ok(expr)
             }
-            token => Err(Error::Parse(format!("Expected value, found {}", token))),
+            t => Err(Error::Parse(format!("Expected value, found {}", t))),
         }
     }
 
-    fn parse_expression(&mut self, min_prec: i8) -> Result<Expression, Error> {
-        let mut lhs = if let Some(prefix) = self.next_if_operator(PrefixOperator::from_token) {
-            prefix.build(self.parse_expression(prefix.precedence() + prefix.associativity())?)
+    /// Parses an expression consisting of at least one atom operated on by any
+    /// number of operators. Uses precedence climbing.
+    fn parse_expression(&mut self, min_prec: u8) -> Result<Expression, Error> {
+        let mut lhs = if let Some(prefix) = self.next_if_operator::<PrefixOperator>(min_prec) {
+            prefix.build(self.parse_expression(prefix.prec() + prefix.assoc())?)
         } else {
             self.parse_atom()?
         };
-        while let Some(postfix) = self.next_if_operator(|t| {
-            PostfixOperator::from_token(t).filter(|o| o.precedence() >= min_prec)
-        }) {
+        while let Some(postfix) = self.next_if_operator::<PostfixOperator>(min_prec) {
             lhs = postfix.build(lhs)
         }
-        while let Some(infix) = self.next_if_operator(|t| {
-            InfixOperator::from_token(t).filter(|o| o.precedence() >= min_prec)
-        }) {
-            lhs =
-                infix.build(lhs, self.parse_expression(infix.precedence() + infix.associativity())?)
+        while let Some(infix) = self.next_if_operator::<InfixOperator>(min_prec) {
+            lhs = infix.build(lhs, self.parse_expression(infix.prec() + infix.assoc())?)
         }
         Ok(lhs)
     }
