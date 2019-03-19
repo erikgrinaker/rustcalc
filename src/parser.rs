@@ -254,7 +254,7 @@ impl<'a> Parser<'a> {
 
     /// Parses the input string into an expression
     pub fn parse(&mut self) -> Result<Expression, Error> {
-        let expr = self.parse_expression(1)?;
+        let expr = self.parse_expression(0)?;
         self.next_expect(None)?;
         Ok(expr)
     }
@@ -269,7 +269,7 @@ impl<'a> Parser<'a> {
                         if !args.is_empty() {
                             self.next_expect(Some(Token::Comma))?;
                         }
-                        args.push(self.parse_expression(1)?);
+                        args.push(self.parse_expression(0)?);
                     }
                     self.build_function(n.clone(), args)
                 } else {
@@ -278,7 +278,7 @@ impl<'a> Parser<'a> {
             }
             Token::Number(n) => self.build_number(n.clone()),
             Token::OpenParen => {
-                let expr = self.parse_expression(1)?; // 1 implies stop at )
+                let expr = self.parse_expression(0)?;
                 self.next_expect(Some(Token::CloseParen))?;
                 Ok(expr)
             }
